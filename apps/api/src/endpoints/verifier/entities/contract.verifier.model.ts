@@ -1,4 +1,4 @@
-import { ContractVerifierStatus } from "./common";
+import { ContractVerifierStatus } from './common';
 
 export class ContractVerifierModel {
   codeHash?: string = '';

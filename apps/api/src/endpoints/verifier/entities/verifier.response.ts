@@ -1,4 +1,4 @@
-import { ContractVerifierStatus } from "./common";
+import { ContractVerifierStatus } from './common';
 
 export class VerifierResponse {
   constructor(partial?: Partial<VerifierResponse>) {
