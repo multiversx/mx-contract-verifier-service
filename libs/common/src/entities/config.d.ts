@@ -6,6 +6,9 @@ export interface Config {
       port: number;
       privatePort: number;
       useCachingInterceptor: boolean;
+      pinataUrl: string;
+      pinataJwt: string;
+      fileStorageCdnUrl: string;
     };
     cacheWarmer: {
       port: number;
@@ -22,6 +25,9 @@ export interface Config {
     common: {
       network: "devnet" | "testnet" | "mainnet";
       urls: {
+        api: string;
+      };
+      queues: {
         api: string;
       };
       database: {

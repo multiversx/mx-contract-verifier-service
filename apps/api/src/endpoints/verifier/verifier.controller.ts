@@ -1,3 +1,5 @@
+import { ContractVerifier, Verifier, VerifierCodeHashResponse, VerifierDeletion, VerifierResponse } from '@libs/common';
+import { TaskService, VerifierService } from '@libs/services';
 import {
   Body,
   Controller,
@@ -8,13 +10,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { TaskService } from 'src/endpoints/task/task.service';
-import { ContractVerifier } from './entities/contract.verifier';
-import { Verifier } from './entities/verifier';
-import { VerifierDeletion } from './entities/verifier.deletion';
-import { VerifierCodeHashResponse } from './entities/verifier.hash.response';
-import { VerifierResponse } from './entities/verifier.response';
-import { VerifierService } from './verifier.service';
+
 
 @ApiTags('verifier')
 @Controller('verifier')

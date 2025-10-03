@@ -1,5 +1,6 @@
-import { ERDNEST_CONFIG_SERVICE } from "@multiversx/sdk-nestjs-common";
 import { CacheModule, RedisCacheModuleOptions } from "@multiversx/sdk-nestjs-cache";
+import { ERDNEST_CONFIG_SERVICE } from "@multiversx/sdk-nestjs-common";
+import { ApiModule, ApiModuleOptions } from '@multiversx/sdk-nestjs-http';
 import { DynamicModule, Provider } from "@nestjs/common";
 import { ClientOptions, ClientProxyFactory, Transport } from "@nestjs/microservices";
 import { CommonConfigModule, CommonConfigService, SdkNestjsConfigServiceImpl } from "../config";
@@ -45,5 +46,19 @@ export class DynamicModuleUtils {
       },
       inject: [CommonConfigService],
     };
+  }
+
+  static getApiModule(): DynamicModule {
+    return ApiModule.forRootAsync({
+      imports: [CommonConfigModule],
+      useFactory: (commonConfigService: CommonConfigService) =>
+        new ApiModuleOptions({
+          axiosTimeout: 61000,
+          rateLimiterSecret: commonConfigService.config.rateLimiterSecret,
+          serverTimeout: 60000,
+          useKeepAliveAgent: true,
+        }),
+      inject: [CommonConfigService],
+    });
   }
 }

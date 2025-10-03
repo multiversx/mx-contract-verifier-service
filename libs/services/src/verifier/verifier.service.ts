@@ -1,23 +1,18 @@
-import { AddressUtils } from '@elrondnetwork/erdnest';
+import { ContractVerifier, ContractVerifierStatus, Verifier, VerifierCodeHashResponse, VerifierDeletion, VerifierDeletionPayload, VerifierPayload, VerifierResponse } from '@libs/common';
+import { CommonConfigService } from '@libs/common/config/common.config.service';
+import { Address, UserVerifier } from '@multiversx/sdk-core';
+import { AddressUtils } from '@multiversx/sdk-nestjs-common';
+import { ApiService } from "@multiversx/sdk-nestjs-http";
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import crypto from "crypto";
 import fs from 'fs';
 import sanitizeFilename from 'sanitize-filename';
-import { ApiConfigService } from 'src/common/api.config.service';
-import { ApiService } from 'src/common/api.service';
-import { EnvironmentEnum } from 'src/common/entities/environment.enum';
 import { PersistenceService } from 'src/common/persistence.service';
-import { PinataUpload } from 'src/common/pinata/entities/pinata.upload';
-import { PinataService } from 'src/common/pinata/pinata.service';
-import { DockerRunner } from 'src/common/utils/docker.runner';
-import { checkPayloadSignature } from 'src/common/utils/signature';
-import { Verifier } from 'src/endpoints/verifier/entities/verifier';
 import * as tmp from 'tmp';
 import { promisify } from 'util';
-import { ContractVerifierStatus } from './entities/common';
-import { ContractVerifier } from './entities/contract.verifier';
-import { VerifierDeletion } from './entities/verifier.deletion';
-import { VerifierCodeHashResponse } from './entities/verifier.hash.response';
-import { VerifierResponse } from './entities/verifier.response';
+import { DockerRunner } from '../docker/docker.runner';
+import { PinataUpload } from '../pinata/entities/pinata.upload';
+import { PinataService } from '../pinata/pinata.service';
 
 const readFile = promisify(fs.readFile);
 const writeFile = promisify(fs.writeFile);
@@ -28,8 +23,7 @@ export class VerifierService {
   private readonly logger: Logger;
 
   constructor(
-    //@ts-ignore
-    private readonly apiConfigurationService: ApiConfigService,
+    private readonly commonConfigurationService: CommonConfigService,
     private readonly persistenceService: PersistenceService,
     private readonly pinataService: PinataService,
     private readonly apiService: ApiService,
@@ -54,12 +48,9 @@ export class VerifierService {
       includeTestFiles = true;
     }
 
-    const currentEnvironment = this.apiConfigurationService.getEnvironment();
     const data = await this.persistenceService.getContractVerifier(address);
     const apiResponse = await this.apiService.get(
-      `${this.apiConfigurationService.getApiUrl(
-        currentEnvironment,
-      )}/accounts/${address}`,
+      `${this.commonConfigurationService.config.urls.api}/accounts/${address}`,
     );
 
     const remoteCodeHash = apiResponse.codeHash;
@@ -154,14 +145,11 @@ export class VerifierService {
     body: VerifierDeletion,
   ): Promise<any> {
     try {
-      const currentEnvironment = this.apiConfigurationService.getEnvironment();
       const { ownerAddress } = await this.apiService.get(
-        `${this.apiConfigurationService.getApiUrl(
-          currentEnvironment,
-        )}/accounts/${body.payload.contract}`,
+        `${this.commonConfigurationService.config.urls.api}/accounts/${body.payload.contract}`,
       );
 
-      if (!checkPayloadSignature(body.signature, body.payload, ownerAddress)) {
+      if (!this.checkPayloadSignature(body.signature, body.payload, ownerAddress)) {
         return {
           status: ContractVerifierStatus.error,
           message: 'Invalid signature',
@@ -183,6 +171,27 @@ export class VerifierService {
     }
   }
 
+  private checkPayloadSignature(signature: string, payload: VerifierPayload | VerifierDeletionPayload, ownerAddress: string): boolean {
+  const stringify = JSON.stringify(payload);
+  const sha256 = crypto.createHash('sha256').update(stringify).digest('hex');
+  const verifier = UserVerifier.fromAddress(new Address(ownerAddress));
+  const message = Buffer.from(payload.contract + sha256);
+  const firstVerificationResult = verifier.verify(message, Buffer.from(signature, "hex"));
+
+  // const signatureFromMessage = new Signature(signature);
+
+  // const signableMessage = new Message({
+  //   address: new Address(ownerAddress),
+  //   data: new Uint8Array(message),
+  //   signature: signatureFromMessage,
+  // });
+
+  // const secondVerificationResult = verifier.verify(signableMessage);
+
+  // return firstVerificationResult || secondVerificationResult;
+  return firstVerificationResult;
+};
+
   private async changeContractVerifierStatusTo(
     contractAddress: string,
     status: ContractVerifierStatus,
@@ -192,10 +201,7 @@ export class VerifierService {
     });
   }
 
-  public async validate(
-    validateBody: Verifier,
-    environment: EnvironmentEnum,
-  ): Promise<VerifierResponse> {
+  public async validate(validateBody: Verifier): Promise<VerifierResponse> {
     this.logger.log(
       `Verifier process started for contract ${validateBody.payload.contract}`,
     );
@@ -289,9 +295,7 @@ export class VerifierService {
 
       // check hashcode
       const apiResponse = await this.apiService.get(
-        `${this.apiConfigurationService.getApiUrl(
-          environment,
-        )}/accounts/${contractAddress}`,
+        `${this.commonConfigurationService.config.urls.api}/accounts/${contractAddress}`,
       );
       const remoteCodeHash = apiResponse.codeHash;
       const hexRemoteCodeHash = Buffer.from(remoteCodeHash, 'base64').toString(
