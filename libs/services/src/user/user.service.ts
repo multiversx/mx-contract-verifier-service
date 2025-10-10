@@ -1,12 +1,10 @@
-import { UserRepository } from "@libs/database";
-import { User } from "@libs/entities";
-import { Injectable } from "@nestjs/common";
+import { UserRepository } from '@libs/database';
+import { User } from '@libs/entities';
+import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class UserService {
-  constructor(
-    private readonly userRepository: UserRepository,
-  ) { }
+  constructor(private readonly userRepository: UserRepository) {}
 
   async create(user: User): Promise<User> {
     return await this.userRepository.create(user);

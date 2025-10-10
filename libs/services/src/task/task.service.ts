@@ -1,10 +1,23 @@
-import { CommonConfigService, ContractVerifierStatus, Task, TaskStatus, Verifier, VerifierResponse } from "@libs/common";
-import { CacheService } from "@multiversx/sdk-nestjs-cache";
-import { Constants } from "@multiversx/sdk-nestjs-common";
-import { ApiService } from "@multiversx/sdk-nestjs-http";
-import { BadRequestException, Inject, Injectable, Logger, RequestTimeoutException } from "@nestjs/common";
-import { ClientProxy } from "@nestjs/microservices";
-import { randomUUID } from "crypto";
+import {
+  CommonConfigService,
+  ContractVerifierStatus,
+  Task,
+  TaskStatus,
+  Verifier,
+  VerifierResponse,
+} from '@libs/common';
+import { CacheService } from '@multiversx/sdk-nestjs-cache';
+import { Constants } from '@multiversx/sdk-nestjs-common';
+import { ApiService } from '@multiversx/sdk-nestjs-http';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  Logger,
+  RequestTimeoutException,
+} from '@nestjs/common';
+import { ClientProxy } from '@nestjs/microservices';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class TaskService {
@@ -16,7 +29,7 @@ export class TaskService {
     private readonly cachingService: CacheService,
     @Inject('PUBSUB_SERVICE') private clientProxy: ClientProxy,
     private readonly configService: CommonConfigService,
-    private readonly apiService: ApiService
+    private readonly apiService: ApiService,
   ) {
     this.logger = new Logger(TaskService.name);
   }
@@ -26,8 +39,12 @@ export class TaskService {
   }
 
   async runVerifier(validate: Verifier): Promise<VerifierResponse> {
-    this.logger.log(`Received verifier request for contract ${validate.payload.contract}`);
-    const { ownerAddress } = await this.apiService.get(`${this.configService.config.urls.api}/accounts/${validate.payload.contract}`);
+    this.logger.log(
+      `Received verifier request for contract ${validate.payload.contract}`,
+    );
+    const { ownerAddress } = await this.apiService.get(
+      `${this.configService.config.urls.api}/accounts/${validate.payload.contract}`,
+    );
     if (!ownerAddress) {
       return {
         status: ContractVerifierStatus.error,
@@ -45,7 +62,9 @@ export class TaskService {
     return new Promise((resolve, reject) => {
       const interval = setInterval(async () => {
         iterations++;
-        const task = await this.cachingService.getRemote<Task>(`task:${taskId}`);
+        const task = await this.cachingService.getRemote<Task>(
+          `task:${taskId}`,
+        );
         if (task) {
           if (task.status === TaskStatus.finished) {
             clearInterval(interval);
@@ -68,8 +87,17 @@ export class TaskService {
 
   private async runWork(type: string, value: any): Promise<string> {
     const taskId = randomUUID();
-    this.clientProxy.emit(this.configService.config.queues.api, { taskId, type, value, environment: this.configService.config.network });
-    await this.cachingService.setRemote<Task>(`task:${taskId}`, { status: TaskStatus.queued }, Constants.oneHour());
+    this.clientProxy.emit(this.configService.config.queues.api, {
+      taskId,
+      type,
+      value,
+      environment: this.configService.config.network,
+    });
+    await this.cachingService.setRemote<Task>(
+      `task:${taskId}`,
+      { status: TaskStatus.queued },
+      Constants.oneHour(),
+    );
     return taskId;
   }
 }

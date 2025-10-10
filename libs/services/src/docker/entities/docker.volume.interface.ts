@@ -1,4 +1,4 @@
 export interface DockerVolumeMapInterface {
-  from: string,
+  from: string;
   to: string;
 }

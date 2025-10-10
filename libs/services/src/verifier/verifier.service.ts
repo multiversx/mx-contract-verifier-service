@@ -1,13 +1,25 @@
-import { ContractVerifier, ContractVerifierStatus, Verifier, VerifierCodeHashResponse, VerifierDeletion, VerifierDeletionPayload, VerifierPayload, VerifierResponse } from '@libs/common';
+import {
+  ContractVerifier,
+  ContractVerifierModel,
+  ContractVerifierOutModel,
+  ContractVerifierSource,
+  ContractVerifierStatus,
+  Verifier,
+  VerifierCodeHashResponse,
+  VerifierDeletion,
+  VerifierDeletionPayload,
+  VerifierPayload,
+  VerifierResponse,
+} from '@libs/common';
 import { CommonConfigService } from '@libs/common/config/common.config.service';
+import { ContractVerifierRepository } from '@libs/database';
 import { Address, UserVerifier } from '@multiversx/sdk-core';
 import { AddressUtils } from '@multiversx/sdk-nestjs-common';
-import { ApiService } from "@multiversx/sdk-nestjs-http";
+import { ApiService } from '@multiversx/sdk-nestjs-http';
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import crypto from "crypto";
+import crypto from 'crypto';
 import fs from 'fs';
 import sanitizeFilename from 'sanitize-filename';
-import { PersistenceService } from 'src/common/persistence.service';
 import * as tmp from 'tmp';
 import { promisify } from 'util';
 import { DockerRunner } from '../docker/docker.runner';
@@ -24,12 +36,29 @@ export class VerifierService {
 
   constructor(
     private readonly commonConfigurationService: CommonConfigService,
-    private readonly persistenceService: PersistenceService,
+    private readonly contractVerifierRepository: ContractVerifierRepository,
     private readonly pinataService: PinataService,
     private readonly apiService: ApiService,
   ) {
     this.dockerRunner = new DockerRunner();
     this.logger = new Logger(VerifierService.name);
+  }
+
+  private async getContractVerifierModel(
+    address: string,
+  ): Promise<ContractVerifierModel | undefined> {
+    const result = await this.contractVerifierRepository.findOne(address);
+    if (!result) {
+      return undefined;
+    }
+
+    return {
+      codeHash: result.codeHash,
+      source: result.source?.contract,
+      status: result.status,
+      ipfsFileHash: result.ipfsFileHash,
+      dockerImage: result.dockerImage,
+    };
   }
 
   public async getContractVerifier(
@@ -48,7 +77,7 @@ export class VerifierService {
       includeTestFiles = true;
     }
 
-    const data = await this.persistenceService.getContractVerifier(address);
+    const data = await this.getContractVerifierModel(address);
     const apiResponse = await this.apiService.get(
       `${this.commonConfigurationService.config.urls.api}/accounts/${address}`,
     );
@@ -117,11 +146,31 @@ export class VerifierService {
     return returnedData;
   }
 
-  public async getVerifiedContracts(): Promise<string[]> {
-    const data = await this.persistenceService.getVerifiedContracts([
-      'address',
-    ]);
+  private async getVerifiedContractsOutModel(
+    fieldsToInclude?: (keyof ContractVerifierOutModel)[],
+  ): Promise<Partial<ContractVerifierOutModel>[]> {
+    const selectFields: Record<string, number> = {};
+    if (fieldsToInclude) {
+      for (const field of fieldsToInclude) {
+        selectFields[field] = 1;
+      }
+    }
 
+    let result = await this.contractVerifierRepository.findVerified(
+      selectFields,
+    );
+    return result.map((entry) => ({
+      address: entry.address,
+      status: entry.status,
+      codeHash: entry.codeHash,
+      ipfsFileHash: entry.ipfsFileHash,
+      dockerImage: entry.dockerImage,
+      source: entry.source?.contract,
+    }));
+  }
+
+  public async getVerifiedContracts(): Promise<string[]> {
+    const data = await this.getVerifiedContractsOutModel(['address']);
     return data.map((contract) => contract.address || '');
   }
 
@@ -132,7 +181,7 @@ export class VerifierService {
       throw new NotFoundException();
     }
 
-    const data = await this.persistenceService.getContractVerifier(address);
+    const data = await this.getContractVerifierModel(address);
 
     if (!data) {
       throw new NotFoundException();
@@ -149,7 +198,9 @@ export class VerifierService {
         `${this.commonConfigurationService.config.urls.api}/accounts/${body.payload.contract}`,
       );
 
-      if (!this.checkPayloadSignature(body.signature, body.payload, ownerAddress)) {
+      if (
+        !this.checkPayloadSignature(body.signature, body.payload, ownerAddress)
+      ) {
         return {
           status: ContractVerifierStatus.error,
           message: 'Invalid signature',
@@ -157,7 +208,7 @@ export class VerifierService {
       }
 
       const contractAddress = body.payload.contract;
-      return this.persistenceService.deleteContractVerifier(contractAddress);
+      return this.deleteContractVerifier(contractAddress);
     } catch (error: any) {
       this.logger.error(
         'Failed to remove contract verifier source:',
@@ -171,32 +222,51 @@ export class VerifierService {
     }
   }
 
-  private checkPayloadSignature(signature: string, payload: VerifierPayload | VerifierDeletionPayload, ownerAddress: string): boolean {
-  const stringify = JSON.stringify(payload);
-  const sha256 = crypto.createHash('sha256').update(stringify).digest('hex');
-  const verifier = UserVerifier.fromAddress(new Address(ownerAddress));
-  const message = Buffer.from(payload.contract + sha256);
-  const firstVerificationResult = verifier.verify(message, Buffer.from(signature, "hex"));
+  async deleteContractVerifier(
+    address: string,
+  ): Promise<ContractVerifierModel | undefined> {
+    const verifier = await this.getContractVerifierModel(address);
+    if (!verifier) {
+      return undefined;
+    }
 
-  // const signatureFromMessage = new Signature(signature);
+    await this.contractVerifierRepository.delete(address);
+    return verifier;
+  }
 
-  // const signableMessage = new Message({
-  //   address: new Address(ownerAddress),
-  //   data: new Uint8Array(message),
-  //   signature: signatureFromMessage,
-  // });
+  private checkPayloadSignature(
+    signature: string,
+    payload: VerifierPayload | VerifierDeletionPayload,
+    ownerAddress: string,
+  ): boolean {
+    const stringify = JSON.stringify(payload);
+    const sha256 = crypto.createHash('sha256').update(stringify).digest('hex');
+    const verifier = UserVerifier.fromAddress(new Address(ownerAddress));
+    const message = Buffer.from(payload.contract + sha256);
+    const firstVerificationResult = verifier.verify(
+      message,
+      Buffer.from(signature, 'hex'),
+    );
 
-  // const secondVerificationResult = verifier.verify(signableMessage);
+    // const signatureFromMessage = new Signature(signature);
 
-  // return firstVerificationResult || secondVerificationResult;
-  return firstVerificationResult;
-};
+    // const signableMessage = new Message({
+    //   address: new Address(ownerAddress),
+    //   data: new Uint8Array(message),
+    //   signature: signatureFromMessage,
+    // });
+
+    // const secondVerificationResult = verifier.verify(signableMessage);
+
+    // return firstVerificationResult || secondVerificationResult;
+    return firstVerificationResult;
+  }
 
   private async changeContractVerifierStatusTo(
     contractAddress: string,
     status: ContractVerifierStatus,
   ) {
-    return this.persistenceService.saveContractVerifier(contractAddress, {
+    return this.contractVerifierRepository.save(contractAddress, {
       status: status,
     });
   }
@@ -246,9 +316,7 @@ export class VerifierService {
     try {
       await writeFile(temporaryFile.fd, JSON.stringify(sourceCode));
 
-      const localData = await this.persistenceService.getContractVerifier(
-        contractAddress,
-      );
+      const localData = await this.getContractVerifierModel(contractAddress);
 
       this.logger.log('Execute docker');
       try {
@@ -345,8 +413,11 @@ export class VerifierService {
         };
       }
 
-      await this.persistenceService.saveContractVerifier(contractAddress, {
-        source: Buffer.from(source).toString('base64'),
+      const code = new ContractVerifierSource();
+      code.contract = Buffer.from(source).toString('base64');
+
+      await this.contractVerifierRepository.save(contractAddress, {
+        source: code,
         codeHash: codeHash.toString(),
         ipfsFileHash: pinataData.hash,
         status: ContractVerifierStatus.success,

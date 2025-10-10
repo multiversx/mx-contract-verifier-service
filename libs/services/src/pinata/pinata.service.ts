@@ -1,9 +1,9 @@
-import axios from "axios";
+import axios from 'axios';
 
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger } from '@nestjs/common';
 
 import { AppConfigService } from '../../../../apps/api/src/config/app-config.service';
-import { PinataUpload } from "./entities/pinata.upload";
+import { PinataUpload } from './entities/pinata.upload';
 
 @Injectable()
 export class PinataService {
@@ -17,7 +17,8 @@ export class PinataService {
     const url = `${this.apiConfigurationService.config.pinataUrl}/pinning/pinJSONToIPFS`;
 
     try {
-      const response = await axios.post(url,
+      const response = await axios.post(
+        url,
         {
           content,
         },
@@ -25,7 +26,8 @@ export class PinataService {
           headers: {
             Authorization: `Bearer ${this.apiConfigurationService.config.pinataJwt}`,
           },
-        });
+        },
+      );
 
       return {
         hash: response.data.IpfsHash,
@@ -33,7 +35,7 @@ export class PinataService {
       };
     } catch (error) {
       this.logger.error(
-        "An error occurred while trying to add content to Pinata.",
+        'An error occurred while trying to add content to Pinata.',
         {
           exception: error,
         },

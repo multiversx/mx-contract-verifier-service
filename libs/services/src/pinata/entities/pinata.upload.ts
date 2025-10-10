@@ -3,7 +3,7 @@ export class PinataUpload {
     Object.assign(this, partial);
   }
 
-  hash: string = "";
+  hash: string = '';
 
-  url: string = "";
+  url: string = '';
 }
