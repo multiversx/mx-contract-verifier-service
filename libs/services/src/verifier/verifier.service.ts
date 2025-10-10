@@ -156,7 +156,7 @@ export class VerifierService {
       }
     }
 
-    let result = await this.contractVerifierRepository.findVerified(
+    const result = await this.contractVerifierRepository.findVerified(
       selectFields,
     );
     return result.map((entry) => ({
@@ -266,7 +266,7 @@ export class VerifierService {
     contractAddress: string,
     status: ContractVerifierStatus,
   ) {
-    return this.contractVerifierRepository.save(contractAddress, {
+    return await this.contractVerifierRepository.save(contractAddress, {
       status: status,
     });
   }
