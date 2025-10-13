@@ -12,6 +12,12 @@ apps:
     maxLookBehind: 100
 libs:
   common:
+    pinata:
+      pinataUrl: ${PINATA_URL}
+      pinataJwt: ${PINATA_JWT}
+      fileStorageCdnUrl: ${FILE_STORAGE_CDN_URL}
+    queues:
+      api: ${API_QUEUE}
     network: ${NETWORK}
     urls:
       api: ${API_URL}
