@@ -12,7 +12,7 @@ import { VerifierModule } from "./verifier/verifier.module";
     TokenModule,
     UserModule,
     ExampleModule,
-    VerifierModule
+    VerifierModule,
   ],
   providers: [
     DynamicModuleUtils.getNestJsApiConfigService(),
