@@ -1,8 +1,19 @@
-import { ContractVerifierSource, ContractVerifierStatus } from '@libs/common';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
 export type ContractVerifierDocument = ContractVerifier & Document;
+
+class ContractVerifierSource {
+  abi: any = '';
+  contract: any = '';
+}
+
+enum ContractVerifierStatus {
+  inProgress = 'inProgress',
+  success = 'success',
+  error = 'error',
+  byteCodeChangedSinceLastVerification = 'byteCodeChangedSinceLastVerification',
+}
 
 @Schema({ collection: 'contract_verifiers' })
 export class ContractVerifier {

@@ -2,19 +2,19 @@ import axios from 'axios';
 
 import { Injectable, Logger } from '@nestjs/common';
 
-import { AppConfigService } from '../../../../apps/api/src/config/app-config.service';
+import { CommonConfigService } from '@libs/common';
 import { PinataUpload } from './entities/pinata.upload';
 
 @Injectable()
 export class PinataService {
   private readonly logger: Logger;
 
-  constructor(private readonly apiConfigurationService: AppConfigService) {
+  constructor(private readonly configurationService: CommonConfigService) {
     this.logger = new Logger(PinataService.name);
   }
 
   async uploadContent(content: String): Promise<PinataUpload | undefined> {
-    const url = `${this.apiConfigurationService.config.pinataUrl}/pinning/pinJSONToIPFS`;
+    const url = `${this.configurationService.config.pinata.pinataUrl}/pinning/pinJSONToIPFS`;
 
     try {
       const response = await axios.post(
@@ -24,14 +24,14 @@ export class PinataService {
         },
         {
           headers: {
-            Authorization: `Bearer ${this.apiConfigurationService.config.pinataJwt}`,
+            Authorization: `Bearer ${this.configurationService.config.pinata.pinataJwt}`,
           },
         },
       );
 
       return {
         hash: response.data.IpfsHash,
-        url: `${this.apiConfigurationService.config.fileStorageCdnUrl}${response.data.IpfsHash}`,
+        url: `${this.configurationService.config.pinata.fileStorageCdnUrl}${response.data.IpfsHash}`,
       };
     } catch (error) {
       this.logger.error(

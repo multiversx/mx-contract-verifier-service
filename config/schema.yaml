@@ -4,9 +4,6 @@ apps:
     port: integer
     privatePort: integer
     useCachingInterceptor: boolean
-    pinataUrl: string
-    pinataJwt: string
-    fileStorageCdnUrl: string
   cacheWarmer:
     port: integer
   queueWorker:
@@ -16,6 +13,10 @@ apps:
     maxLookBehind: integer
 libs:
   common:
+    pinata:
+      pinataUrl: string
+      pinataJwt: string
+      fileStorageCdnUrl: string
     network:
       type: string
       enum: [devnet, testnet, mainnet]
