@@ -4,7 +4,7 @@ import {
   Task,
   TaskStatus,
   Verifier,
-  VerifierResponse,
+  VerifierResponse
 } from '@libs/common';
 import { CacheService } from '@multiversx/sdk-nestjs-cache';
 import { Constants } from '@multiversx/sdk-nestjs-common';
@@ -42,9 +42,12 @@ export class TaskService {
     this.logger.log(
       `Received verifier request for contract ${validate.payload.contract}`,
     );
-    const { ownerAddress } = await this.apiService.get(
+
+    const response = await this.apiService.get(
       `${this.configService.config.urls.api}/accounts/${validate.payload.contract}`,
     );
+
+    const ownerAddress = response?.data?.ownerAddress;
     if (!ownerAddress) {
       return {
         status: ContractVerifierStatus.error,

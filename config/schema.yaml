@@ -8,9 +8,6 @@ apps:
     port: integer
   queueWorker:
     port: integer
-  transactionsProcessor:
-    port: integer
-    maxLookBehind: integer
 libs:
   common:
     pinata:
@@ -40,13 +37,6 @@ libs:
     redis:
       host: string
       port: integer
-    nativeAuth:
-      maxExpirySeconds:
-        type: integer
-        default: 86400
-      acceptedOrigins:
-        type: array
-        items: string
     security:
       admins:
         type: array

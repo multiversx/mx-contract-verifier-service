@@ -13,10 +13,6 @@ export interface Config {
     queueWorker: {
       port: number;
     };
-    transactionsProcessor: {
-      port: number;
-      maxLookBehind: number;
-    };
   };
   libs: {
     common: {
@@ -43,10 +39,6 @@ export interface Config {
       redis: {
         host: string;
         port: number;
-      };
-      nativeAuth: {
-        maxExpirySeconds: number;
-        acceptedOrigins: string[];
       };
       security: {
         admins: string[];

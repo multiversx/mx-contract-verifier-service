@@ -4,11 +4,8 @@ import { ApiModule } from '@multiversx/sdk-nestjs-http';
 import { MetricsModule, MetricsService } from '@multiversx/sdk-nestjs-monitoring';
 import { Global, Module } from '@nestjs/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
-import { ExampleService } from './example/example.service';
 import { PinataService } from './pinata';
 import { TaskService } from './task';
-import { TokenService } from './token/token.service';
-import { UserService } from './user/user.service';
 import { VerifierService } from './verifier';
 
 @Global()
@@ -43,17 +40,11 @@ import { VerifierService } from './verifier';
     ]),
   ],
   providers: [
-    TokenService,
-    UserService,
-    ExampleService,
     VerifierService,
     TaskService,
     PinataService,
   ],
   exports: [
-    TokenService,
-    UserService,
-    ExampleService,
     VerifierService,
     TaskService,
     PinataService,
