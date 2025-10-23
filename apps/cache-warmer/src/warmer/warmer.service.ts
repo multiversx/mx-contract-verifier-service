@@ -15,7 +15,7 @@ export class WarmerService {
   @Cron('* * * * *')
   async handleExampleInvalidations() {
     await Locker.lock('Example invalidations', async () => {
-      const examples = await this.exampleService.getAllExamplesRaw();
+      const examples: any = [];
       await this.invalidateKey(CacheInfo.Examples.key, examples, CacheInfo.Examples.ttl);
     }, true);
   }

@@ -1,4 +1,4 @@
-import { DynamicModuleUtils } from '@libs/common';
+import { DynamicModuleUtils } from '@libs/common/utils';
 import { DatabaseModule } from '@libs/database';
 import { ApiModule } from '@multiversx/sdk-nestjs-http';
 import { MetricsModule, MetricsService } from '@multiversx/sdk-nestjs-monitoring';
