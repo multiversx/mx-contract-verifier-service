@@ -13,8 +13,8 @@ export class WorkerService {
     this.logger = new Logger(WorkerService.name);
   }
 
-  async addJobIntoQueue(type: string, data: Verifier) {
-    const job = await this.verifierQueue.add(type, data);
-    this.logger.log({ type: 'producer', jobId: job.id, identifier: job.data.validate.payload.contract });
+  async addJobIntoQueue(type: string, taskId: string, data: Verifier) {
+    const job = await this.verifierQueue.add(type, {taskId, data});
+    this.logger.log({ type: 'producer', jobId: job.id, identifier: job.data.data.validate.payload.contract });
   }
 }

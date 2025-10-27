@@ -7,6 +7,7 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 import { PinataService } from './pinata';
 import { TaskService } from './task';
 import { VerifierService } from './verifier';
+import { WorkerCallbackService, WorkerService } from './worker';
 
 @Global()
 @Module({
@@ -43,11 +44,15 @@ import { VerifierService } from './verifier';
     VerifierService,
     TaskService,
     PinataService,
+    WorkerCallbackService,
+    WorkerService,
   ],
   exports: [
     VerifierService,
     TaskService,
     PinataService,
+    WorkerCallbackService,
+    WorkerService,
   ],
 })
 export class ServicesModule { }
