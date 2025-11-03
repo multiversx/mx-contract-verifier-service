@@ -4,12 +4,11 @@ import {
 } from '@libs/common';
 import { VerifierService } from '@libs/services/verifier';
 import {
-  Inject,
   Injectable,
   Logger
 } from '@nestjs/common';
-import { ClientProxy } from '@nestjs/microservices';
 import AsyncLock from "async-lock";
+import { WorkerCallbackService } from './worker.callback.service';
 
 @Injectable()
 export class WorkerService {
@@ -17,8 +16,8 @@ export class WorkerService {
   private readonly logger: Logger;
 
   constructor(
-    @Inject('PUBSUB_SERVICE') private clientProxy: ClientProxy,
     private readonly verifierService: VerifierService,
+    private readonly workerCallbackService: WorkerCallbackService
   ) {
     this.lock = new AsyncLock();
     this.logger = new Logger("Worker");
@@ -46,8 +45,8 @@ export class WorkerService {
     });
   }
 
-  private updateTask(taskIdentifier: string, status: TaskStatus, result?: any) {
+  private async updateTask(taskIdentifier: string, status: TaskStatus, result?: any) {
     this.logger.log(`Updating task ${taskIdentifier} with status ${TaskStatus[status]}`);
-    this.clientProxy.emit("callback_status", { taskIdentifier, status, result });
+    await this.workerCallbackService.updateStatus(taskIdentifier, status, result);
   }
 }
