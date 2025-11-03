@@ -1,9 +1,10 @@
-import { Module } from "@nestjs/common";
 import { DynamicModuleUtils } from "@libs/common";
+import { Module } from "@nestjs/common";
 import { AuthModule } from "./auth/auth.module";
+import { ExampleModule } from "./example/example.module";
 import { TokenModule } from "./token/token.module";
 import { UserModule } from "./user/user.module";
-import { ExampleModule } from "./example/example.module";
+import { VerifierModule } from "./verifier/verifier.module";
 
 @Module({
   imports: [
@@ -11,6 +12,7 @@ import { ExampleModule } from "./example/example.module";
     TokenModule,
     UserModule,
     ExampleModule,
+    VerifierModule,
   ],
   providers: [
     DynamicModuleUtils.getNestJsApiConfigService(),

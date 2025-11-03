@@ -20,8 +20,16 @@ export interface Config {
   };
   libs: {
     common: {
+      pinata: {
+        pinataUrl: string;
+        pinataJwt: string;
+        fileStorageCdnUrl: string;
+      };
       network: "devnet" | "testnet" | "mainnet";
       urls: {
+        api: string;
+      };
+      queues: {
         api: string;
       };
       database: {
