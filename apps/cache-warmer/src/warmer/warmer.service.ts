@@ -1,23 +1,21 @@
-import { Inject, Injectable } from "@nestjs/common";
-import { Cron } from "@nestjs/schedule";
-import { ClientProxy } from "@nestjs/microservices";
+import { CacheInfo } from "@libs/common/utils/cache.info";
 import { CacheService } from "@multiversx/sdk-nestjs-cache";
 import { Locker } from "@multiversx/sdk-nestjs-common";
-import { CacheInfo } from "@libs/common/utils/cache.info";
-import { ExampleService } from "@libs/services";
+import { Inject, Injectable } from "@nestjs/common";
+import { ClientProxy } from "@nestjs/microservices";
+import { Cron } from "@nestjs/schedule";
 
 @Injectable()
 export class WarmerService {
   constructor(
     private readonly cachingService: CacheService,
     @Inject('PUBSUB_SERVICE') private clientProxy: ClientProxy,
-    private readonly exampleService: ExampleService,
   ) { }
 
   @Cron('* * * * *')
   async handleExampleInvalidations() {
     await Locker.lock('Example invalidations', async () => {
-      const examples = await this.exampleService.getAllExamplesRaw();
+      const examples: any = [];
       await this.invalidateKey(CacheInfo.Examples.key, examples, CacheInfo.Examples.ttl);
     }, true);
   }

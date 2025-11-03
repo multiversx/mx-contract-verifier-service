@@ -1,5 +1,5 @@
-import { Injectable } from "@nestjs/common";
 import { ErdnestConfigService } from "@multiversx/sdk-nestjs-common";
+import { Injectable } from "@nestjs/common";
 import { CommonConfigService } from "./common.config.service";
 
 @Injectable()
@@ -13,7 +13,7 @@ export class SdkNestjsConfigServiceImpl implements ErdnestConfigService {
   }
 
   getJwtSecret(): string {
-    return ''; // We use only NativeAuth in this template, so we don't need a JWT secret
+    return '';
   }
 
   getApiUrl(): string {
@@ -21,10 +21,10 @@ export class SdkNestjsConfigServiceImpl implements ErdnestConfigService {
   }
 
   getNativeAuthMaxExpirySeconds(): number {
-    return this.commonConfigService.config.nativeAuth.maxExpirySeconds;
+    return 0;
   }
 
   getNativeAuthAcceptedOrigins(): string[] {
-    return this.commonConfigService.config.nativeAuth.acceptedOrigins;
+    return [];
   }
 }

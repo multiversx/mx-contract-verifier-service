@@ -82,7 +82,7 @@ export class VerifierService {
       `${this.commonConfigurationService.config.urls.api}/accounts/${address}`,
     );
 
-    const remoteCodeHash = apiResponse.codeHash;
+    const remoteCodeHash = apiResponse.data.codeHash;
 
     if (!data || !remoteCodeHash) {
       if (!remoteCodeHash) {
@@ -194,9 +194,11 @@ export class VerifierService {
     body: VerifierDeletion,
   ): Promise<any> {
     try {
-      const { ownerAddress } = await this.apiService.get(
+      const apiResponse  = await this.apiService.get(
         `${this.commonConfigurationService.config.urls.api}/accounts/${body.payload.contract}`,
       );
+
+      const ownerAddress: string = apiResponse.data.ownerAddress;
 
       if (
         !this.checkPayloadSignature(body.signature, body.payload, ownerAddress)
@@ -277,14 +279,11 @@ export class VerifierService {
     );
 
     const sourceCode = validateBody.payload.sourceCode;
-    const contractName = sanitizeFilename(
-      sourceCode.name || sourceCode.metadata.contractName,
-    );
+    const contractName = sanitizeFilename(sourceCode.name || sourceCode.metadata.contractName);
     const contractNameVariant = validateBody.payload.contractVariant
       ? sanitizeFilename(validateBody.payload.contractVariant)
       : undefined;
-    const contractVersion =
-      sourceCode.version || sourceCode.metadata.contractVersion;
+    const contractVersion = sourceCode.version || sourceCode.metadata.contractVersion;
     const dockerImage = validateBody.payload.dockerImage;
 
     if (
@@ -309,9 +308,7 @@ export class VerifierService {
 
     const contractAddress = validateBody.payload.contract;
 
-    this.logger.log(
-      `Write contract received source code temporary to: ${temporaryFile.name}`,
-    );
+    this.logger.log(`Write contract received source code temporary to: ${temporaryFile.name}`);
 
     try {
       await writeFile(temporaryFile.fd, JSON.stringify(sourceCode));
@@ -334,16 +331,14 @@ export class VerifierService {
           noDockerTty: true,
         });
       } catch (e) {
-        this.logger.log(`Contract built error ${e}`, e);
+        this.logger.log(`Contract build error ${e}`, e);
         return {
           status: ContractVerifierStatus.error,
           message: 'Contract build error',
         };
       }
       this.logger.log(`Docker build finished without errors - ${contractName}`);
-      this.logger.log(
-        `Using temporary folder: ${temporaryFolder.name}/${contractName}`,
-      );
+      this.logger.log(`Using temporary folder: ${temporaryFolder.name}/${contractName}`);
 
       const contractSourceFilePath = `${temporaryFolder.name}/${contractName}/${contractName}-${contractVersion}.source.json`;
 
@@ -357,18 +352,14 @@ export class VerifierService {
 
       this.logger.log(`Contract source read from ${contractSourceFilePath}`);
       this.logger.log(`Code hash read from ${codeHashFilePath} - ${codeHash}`);
-      this.logger.log(
-        `Contract ABI file read from ${contractAbiFileSourcePath}`,
-      );
+      this.logger.log(`Contract ABI file read from ${contractAbiFileSourcePath}`);
 
       // check hashcode
       const apiResponse = await this.apiService.get(
         `${this.commonConfigurationService.config.urls.api}/accounts/${contractAddress}`,
       );
-      const remoteCodeHash = apiResponse.codeHash;
-      const hexRemoteCodeHash = Buffer.from(remoteCodeHash, 'base64').toString(
-        'hex',
-      );
+      const remoteCodeHash = apiResponse.data.codeHash;
+      const hexRemoteCodeHash = Buffer.from(remoteCodeHash, 'base64').toString('hex');
 
       if (
         localData &&
@@ -392,8 +383,7 @@ export class VerifierService {
         contract: JSON.parse(contractSource.toString()),
       });
 
-      const pinataData: PinataUpload | undefined =
-        await this.pinataService.uploadContent(JSON.parse(source));
+      const pinataData: PinataUpload | undefined = await this.pinataService.uploadContent(JSON.parse(source));
 
       if (hexRemoteCodeHash !== codeHash.toString()) {
         this.logger.log(

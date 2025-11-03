@@ -1,8 +1,9 @@
 import { Task } from "@libs/common";
 import { TaskService } from "@libs/services";
 import { Controller, Get, NotFoundException, Param } from "@nestjs/common";
-import { ApiParam, ApiResponse } from "@nestjs/swagger";
+import { ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
 
+@ApiTags('tasks')
 @Controller('tasks')
 export class TaskController {
   constructor(

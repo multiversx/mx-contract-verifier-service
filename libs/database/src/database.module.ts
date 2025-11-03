@@ -2,16 +2,10 @@ import { CommonConfigModule, CommonConfigService } from '@libs/common';
 import {
   ContractVerifier,
   ContractVerifierSchema,
-  Token,
-  TokenSchema,
-  User,
-  UserSchema,
 } from '@libs/entities';
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { UserRepository } from './repositories';
 import { ContractVerifierRepository } from './repositories/contract.verifier.repository';
-import { TokenRepository } from './repositories/token.repository';
 
 @Module({
   imports: [
@@ -28,12 +22,11 @@ import { TokenRepository } from './repositories/token.repository';
       inject: [CommonConfigService],
     }),
     MongooseModule.forFeature([
-      { name: Token.name, schema: TokenSchema },
-      { name: User.name, schema: UserSchema },
       { name: ContractVerifier.name, schema: ContractVerifierSchema },
     ]),
   ],
-  providers: [TokenRepository, UserRepository, ContractVerifierRepository],
-  exports: [TokenRepository, UserRepository, ContractVerifierRepository],
+  providers: [ContractVerifierRepository],
+  exports: [ContractVerifierRepository],
 })
+
 export class DatabaseModule {}

@@ -31,7 +31,7 @@ export class PinataService {
 
       return {
         hash: response.data.IpfsHash,
-        url: `${this.configurationService.config.pinata.fileStorageCdnUrl}${response.data.IpfsHash}`,
+        url: `${this.configurationService.config.pinata.fileStorageCdnUrl}/${response.data.IpfsHash}`,
       };
     } catch (error) {
       this.logger.error(
