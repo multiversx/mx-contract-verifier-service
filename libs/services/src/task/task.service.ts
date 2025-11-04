@@ -13,6 +13,7 @@ import {
   BadRequestException,
   Inject,
   Injectable,
+  InternalServerErrorException,
   Logger,
   RequestTimeoutException,
 } from '@nestjs/common';
@@ -43,11 +44,17 @@ export class TaskService {
       `Received verifier request for contract ${validate.payload.contract}`,
     );
 
-    const response = await this.apiService.get(
-      `${this.configService.config.urls.api}/accounts/${validate.payload.contract}`,
-    );
+    let response: any;
+    try {
+      response = await this.apiService.get(
+        `${this.configService.config.urls.api}/accounts/${validate.payload.contract}`,
+      );
+    } catch (error: any) {
+      this.logger.error(`Error fetching account data for contract ${validate.payload.contract}, error: ${error.message}`);
+      throw new InternalServerErrorException(`Failed to fetch account data for contract ${validate.payload.contract}`);
+    }
 
-    const ownerAddress = response?.data?.ownerAddress;
+    const ownerAddress: string = response.data?.ownerAddress;
     if (!ownerAddress) {
       return {
         status: ContractVerifierStatus.error,
