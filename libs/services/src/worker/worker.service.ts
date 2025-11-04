@@ -1,27 +1,23 @@
 import {
   TaskStatus,
-  Verifier
+  Verifier,
 } from '@libs/common';
-import { VerifierService } from '@libs/services/verifier';
 import {
-  Inject,
   Injectable,
-  Logger
 } from '@nestjs/common';
-import { ClientProxy } from '@nestjs/microservices';
 import AsyncLock from "async-lock";
+import { VerifierService } from '../verifier';
+import { WorkerCallbackService } from './worker.callback.service';
 
 @Injectable()
 export class WorkerService {
   private readonly lock: AsyncLock;
-  private readonly logger: Logger;
 
   constructor(
-    @Inject('PUBSUB_SERVICE') private clientProxy: ClientProxy,
     private readonly verifierService: VerifierService,
+    private readonly workerCallbackService: WorkerCallbackService,
   ) {
     this.lock = new AsyncLock();
-    this.logger = new Logger("Worker");
   }
 
   async workVerifier(taskId: string, validate: Verifier): Promise<void> {
@@ -29,25 +25,24 @@ export class WorkerService {
   }
 
   private async work<T>(taskId: string, promise: () => Promise<T>): Promise<T> {
-    this.updateTask(taskId, TaskStatus.queued);
+    await this.updateTask(taskId, TaskStatus.queued);
 
     return await this.lock.acquire('task', async done => {
       try {
-        this.updateTask(taskId, TaskStatus.started);
+        await this.updateTask(taskId, TaskStatus.started);
 
         const result = await promise();
 
-        this.updateTask(taskId, TaskStatus.finished, result);
+        await this.updateTask(taskId, TaskStatus.finished, result);
         done(undefined, result);
       } catch (error: any) {
-        this.updateTask(taskId, TaskStatus.error, error.response?.errors);
+        await this.updateTask(taskId, TaskStatus.error, error.response?.errors);
         done(error);
       }
     });
   }
 
-  private updateTask(taskIdentifier: string, status: TaskStatus, result?: any) {
-    this.logger.log(`Updating task ${taskIdentifier} with status ${TaskStatus[status]}`);
-    this.clientProxy.emit("callback_status", { taskIdentifier, status, result });
+  private async updateTask(taskIdentifier: string, status: TaskStatus, result?: any) {
+    await this.workerCallbackService.updateStatus(taskIdentifier, status, result);
   }
 }
