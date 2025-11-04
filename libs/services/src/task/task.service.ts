@@ -4,7 +4,7 @@ import {
   Task,
   TaskStatus,
   Verifier,
-  VerifierResponse
+  VerifierResponse,
 } from '@libs/common';
 import { CacheService } from '@multiversx/sdk-nestjs-cache';
 import { Constants } from '@multiversx/sdk-nestjs-common';
