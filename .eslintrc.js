@@ -103,8 +103,8 @@ module.exports = {
         },
         {
           from: 'libs/common',
-          allow: ['libs/entities']
-        }
+          allow: ['libs/entities', 'libs/services', 'apps/queue-worker']
+        },
       ]
     }],
     'boundaries/no-unknown': [2],
