@@ -3,7 +3,7 @@ import {
   Verifier,
 } from '@libs/common';
 import {
-  Injectable
+  Injectable,
 } from '@nestjs/common';
 import AsyncLock from "async-lock";
 import { VerifierService } from '../verifier';
