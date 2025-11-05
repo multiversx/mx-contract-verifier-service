@@ -1,6 +1,5 @@
 import {
   CommonConfigService,
-  ContractVerifierStatus,
   Task,
   TaskStatus,
   Verifier,
@@ -54,13 +53,11 @@ export class TaskService {
       throw new InternalServerErrorException(`Failed to fetch account data for contract ${validate.payload.contract}`);
     }
 
-    const ownerAddress: string = response.data?.ownerAddress;
+    const ownerAddress = response.data?.ownerAddress;
     if (!ownerAddress) {
-      return {
-        status: ContractVerifierStatus.error,
-        message: 'Invalid contract address',
-      };
+      throw new BadRequestException('Could not determine owner address for the contract.');
     }
+
     return await this.run('validate', { validate });
   }
 

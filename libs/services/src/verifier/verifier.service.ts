@@ -66,8 +66,6 @@ export class VerifierService {
     dependencyDepth: number = 0,
     includeTestFiles: boolean = false,
   ): Promise<ContractVerifier> {
-    includeTestFiles = includeTestFiles === true;
-
     // If we want to return all deps, include also test files
     if (dependencyDepth === -1) {
       includeTestFiles = true;
@@ -186,7 +184,7 @@ export class VerifierService {
     const data = await this.getContractVerifierModel(address);
 
     if (!data) {
-      throw new BadRequestException("Verified contract not found for the given address.");
+      throw new NotFoundException("Verified contract not found for the given address.");
     }
 
     return { codeHash: data.codeHash || '' };
@@ -206,7 +204,11 @@ export class VerifierService {
     }
 
     try {
-      const ownerAddress: string = apiResponse.data?.ownerAddress;
+      const ownerAddress = apiResponse.data?.ownerAddress;
+      if (!ownerAddress) {
+          this.logger.error(`No owner address for contract ${body.payload.contract}`);
+          throw new BadRequestException('Could not determine owner address for the contract.');
+      }
 
       if (
         !this.checkPayloadSignature(body.signature, body.payload, ownerAddress)
@@ -375,6 +377,10 @@ export class VerifierService {
       }
 
       const remoteCodeHash = apiResponse.data?.codeHash;
+      if (!remoteCodeHash) {
+        this.logger.log(`No remote code hash for contract ${contractAddress}`);
+        throw new BadRequestException('Could not retrieve code hash for the contract.');
+      }
       const hexRemoteCodeHash = Buffer.from(remoteCodeHash, 'base64').toString('hex');
 
       if (
