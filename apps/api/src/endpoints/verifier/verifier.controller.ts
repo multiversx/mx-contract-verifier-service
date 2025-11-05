@@ -1,6 +1,6 @@
 import { ContractVerifier, Verifier, VerifierCodeHashResponse, VerifierDeletion, VerifierResponse } from '@libs/common';
 import { TaskService, VerifierService } from '@libs/services';
-import { ParseAddressPipe, ParseBoolPipe } from '@multiversx/sdk-nestjs-common';
+import { ParseAddressPipe, ParseBoolPipe, ParseIntPipe } from '@multiversx/sdk-nestjs-common';
 import {
   Body,
   Controller,
@@ -46,7 +46,7 @@ export class VerifierController {
   })
   @ApiParam({
     name: 'address',
-    description: 'The dependencies depth to be returned',
+    description: 'The bech32 address of the contract',
     required: true,
   })
   @ApiQuery({
@@ -61,7 +61,7 @@ export class VerifierController {
   })
   async getVerifier(
     @Param('address', ParseAddressPipe) address: string,
-    @Query('depth') depth: number,
+    @Query('depth', ParseIntPipe) depth: number,
     @Query('includeTestFiles', ParseBoolPipe) includeTestFiles: boolean,
   ): Promise<ContractVerifier> {
     return await this.verifierService.getContractVerifier(

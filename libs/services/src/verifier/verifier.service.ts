@@ -368,8 +368,8 @@ export class VerifierService {
       let apiResponse;
       try {
         apiResponse = await this.apiService.get(
-        `${this.commonConfigurationService.config.urls.api}/accounts/${contractAddress}`,
-      );
+          `${this.commonConfigurationService.config.urls.api}/accounts/${contractAddress}`,
+        );
       } catch (error: any) {
         this.logger.error(`Error fetching account data for contract ${contractAddress}, error: ${error.message}`);
         throw new InternalServerErrorException(`Failed to fetch account data for contract ${contractAddress}`);
@@ -404,8 +404,6 @@ export class VerifierService {
         contract: JSON.parse(contractSource.toString()),
       });
 
-      const pinataData: PinataUpload | undefined = await this.pinataService.uploadContent(JSON.parse(source));
-
       if (hexRemoteCodeHash !== codeHash.toString()) {
         this.logger.log(
           `Source code hashes do not match - ${codeHash.toString()} - ${hexRemoteCodeHash}`,
@@ -416,6 +414,7 @@ export class VerifierService {
         };
       }
 
+      const pinataData: PinataUpload | undefined = await this.pinataService.uploadContent(JSON.parse(source));
       if (!pinataData) {
         this.logger.log('Could not upload to IPFS');
         return {
