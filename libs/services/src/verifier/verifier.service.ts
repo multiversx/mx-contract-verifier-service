@@ -255,17 +255,16 @@ export class VerifierService {
     const sha256 = crypto.createHash('sha256').update(stringify).digest('hex');
     const verifier = UserVerifier.fromAddress(new Address(ownerAddress));
     const message = Buffer.from(payload.contract + sha256);
-    const firstVerificationResult = verifier.verify(
-      message,
-      Buffer.from(signature, 'hex'),
-    );
 
     const signatureAsBuffer = Buffer.from(signature, "hex");
+    const firstVerificationResult = verifier.verify(
+      message,
+      signatureAsBuffer,
+    );
 
     const signableMessage = new Message({
       address: new Address(ownerAddress),
       data: new Uint8Array(message),
-      signature: new Uint8Array(signatureAsBuffer),
     });
 
     const messageComputer = new MessageComputer();
