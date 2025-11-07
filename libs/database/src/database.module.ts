@@ -1,10 +1,10 @@
-import { CommonConfigModule, CommonConfigService } from '@libs/common';
+import { Module } from '@nestjs/common';
+import { MongooseModule } from '@nestjs/mongoose';
+import { CommonConfigModule, CommonConfigService } from '../../common/src';
 import {
   ContractVerifier,
   ContractVerifierSchema,
-} from '@libs/entities';
-import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
+} from '../../entities/src';
 import { ContractVerifierRepository } from './repositories/contract.verifier.repository';
 
 @Module({
