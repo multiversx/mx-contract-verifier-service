@@ -1,10 +1,45 @@
+jest.mock('fs', () => {
+    const actualFs = jest.requireActual('fs');
+    return {
+        ...actualFs,
+        writeFile: jest.fn((_fd, _data, cb) => cb(null)),
+        readFile: jest.fn((path, cb) => {
+            if (path.includes('.source.json')) {
+                cb(null, Buffer.from(JSON.stringify({ schemaVersion: "2.0.0", metadata: { contractName: "adder" } })));
+            } else if (path.includes('.codehash.txt')) {
+                cb(null, Buffer.from('7f7376f37a9f809a1a9b21b60a2a9afe7c9d22ab65807324f537ab3696110a58'));
+            } else if (path.includes('.abi.json')) {
+                cb(null, Buffer.from(JSON.stringify({ name: "adder", methods: [] })));
+            } else {
+                cb(new Error('File not found'));
+            }
+        }),
+        promises: {
+            writeFile: jest.fn(async () => undefined),
+            readFile: jest.fn(async (path) => {
+                if (path.includes('.source.json')) {
+                    return Buffer.from(JSON.stringify({ schemaVersion: "2.0.0", metadata: { contractName: "adder" } }));
+                } else if (path.includes('.codehash.txt')) {
+                    return Buffer.from('7f7376f37a9f809a1a9b21b60a2a9afe7c9d22ab65807324f537ab3696110a58');
+                } else if (path.includes('.abi.json')) {
+                    return Buffer.from(JSON.stringify({ name: "adder", methods: [] }));
+                } else {
+                    throw new Error('File not found');
+                }
+            }),
+        },
+    };
+});
+
 import { ApiService } from '@multiversx/sdk-nestjs-http';
 import { Logger, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { CommonConfigService, ContractVerifierStatus } from "../common/src";
 import { ContractVerifierRepository } from '../database/src';
+import { DockerRunner } from '../services/src/docker/docker.runner';
 import { PinataService } from '../services/src/pinata/pinata.service';
 import { VerifierService } from "../services/src/verifier";
+import { validatePayloadMock } from './mocks';
 
 describe('VerifierService', () => {
     let service: VerifierService;
@@ -12,6 +47,7 @@ describe('VerifierService', () => {
     let contractVerifierRepository: jest.Mocked<ContractVerifierRepository>;
     let pinataService: jest.Mocked<PinataService>;
     let apiService: jest.Mocked<ApiService>;
+    let dockerRunner: jest.Mocked<DockerRunner>;
 
     const mockAddress = 'erd1qqqqqqqqqqqqqpgqvxzjqasv3jsu5kxtk8ergnqdhuk3vfmnd8ss3hzc3q';
     const mockCodeHash = '7f7376f37a9f809a1a9b21b60a2a9afe7c9d22ab65807324f537ab3696110a58';
@@ -36,6 +72,9 @@ describe('VerifierService', () => {
             config: {
                 urls: {
                     api: 'https://devnet-api.multiversx.com'
+                },
+                pinata: {
+                    fileStorageCdnUrl: 'https://gateway.pinata.cloud/ipfs',
                 }
             }
         } as any;
@@ -53,6 +92,10 @@ describe('VerifierService', () => {
 
         apiService = {
             get: jest.fn()
+        } as any;
+
+        dockerRunner = {
+            exec: jest.fn()
         } as any;
 
         const module: TestingModule = await Test.createTestingModule({
@@ -73,7 +116,11 @@ describe('VerifierService', () => {
                 {
                     provide: ApiService,
                     useValue: apiService
-                }
+                },
+                {
+                    provide: DockerRunner,
+                    useValue: dockerRunner
+                },
             ],
         }).compile();
 
@@ -97,7 +144,7 @@ describe('VerifierService', () => {
 
         apiService.get.mockResolvedValue({
             data: {
-                codeHash: Buffer.from(mockCodeHash, 'hex').toString('base64')
+                codeHash: Buffer.from(mockCodeHash, 'hex').toString('base64'),
             }
         });
 
@@ -121,7 +168,7 @@ describe('VerifierService', () => {
                     }
                 }
             }
-        })
+        });
     });
 
     it('should get verified contracts', async () => {
@@ -147,8 +194,6 @@ describe('VerifierService', () => {
     });
 
     it('should throw could not determine owner address - delete contract verifier', async () => {
-        contractVerifierRepository.findOne.mockResolvedValue(verifiedContractMock);
-
         apiService.get.mockResolvedValue({
             data: {}
         });
@@ -165,6 +210,174 @@ describe('VerifierService', () => {
         expect(result).toEqual({
             status: ContractVerifierStatus.error,
             message: 'Failed to remove contract verifier source due to internal error.',
+        });
+    });
+
+    it('should return invalid signature - delete contract verifier', async () => {
+        apiService.get.mockResolvedValue({
+            data: {
+                ownerAddress: 'erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th',
+            }
+        });
+
+        const requestBody = {
+            'signature': '9cf0bfecf402a73c37733e78780bd4ddd3fec7f97831faf91b173a7715ce5822053ac20329fc004272d22e284a10da6f057df5a7783b11cfda1c90163d66b60a', // altered signature
+            'payload': {
+                'contract': 'erd1qqqqqqqqqqqqqpgqvxzjqasv3jsu5kxtk8ergnqdhuk3vfmnd8ss3hzc3q',
+                'codeHash': '7f7376f37a9f809a1a9b21b60a2a9afe7c9d22ab65807324f537ab3696110a58'
+            }
+        };
+
+        const result = await service.removeContractVerifierSource(requestBody);
+        expect(result).toEqual({
+            status: ContractVerifierStatus.error,
+            message: 'Invalid signature',
+        });
+    });
+
+    it('should return undefined for invalid contract - delete contract verifier', async () => {
+        const spy = jest.spyOn(service as any, 'checkPayloadSignature').mockImplementation(() => true);
+
+        contractVerifierRepository.findOne.mockResolvedValue(null);
+
+        apiService.get.mockResolvedValue({
+            data: {
+                ownerAddress: 'erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zp6hypefsdd8ssycr6th',
+            }
+        });
+
+        const requestBody = {
+            'signature': 'd0d16d94bb8c3b391c69d370fd3ca1e1fbf757f68ce543c1ed4ab7fe3c1208731b797342a76aea94b9cabc39ceb4afb7ac5b7e35475c44f52bfd938f1a5c8b0d',
+            'payload': {
+                'contract': 'erd1qqqqqqqqqqqqqpgq8uzcu905yt6xk7k6eg9gnhhxp6gk9swnd8sspla0v4',
+                'codeHash': '7f7376f37a9f809a1a9b21b60a2a9afe7c9d22ab65807324f537ab3696110a58'
+            }
+        };
+
+        const result = await service.removeContractVerifierSource(requestBody);
+        expect(result).toBeUndefined();
+
+        spy.mockRestore();
+    });
+
+    it('should delete contract verifier', async () => {
+        const spy =jest.spyOn(service as any, 'checkPayloadSignature').mockImplementation(() => true);
+
+        contractVerifierRepository.findOne.mockResolvedValue(verifiedContractMock);
+        contractVerifierRepository.delete.mockResolvedValue(verifiedContractMock);
+
+        apiService.get.mockResolvedValue({
+            data: {
+                ownerAddress: 'erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zp6hypefsdd8ssycr6th',
+            }
+        });
+
+        const requestBody = {
+            'signature': '9cf0bfecf402a73c37733e78780bd4ddd3fec7f97831faf91b173a7715ce5822053ac20329fc004272d22e284a10da6f057df5a7783b11cfda1c90163d66b60f',
+            'payload': {
+                'contract': 'erd1qqqqqqqqqqqqqpgqvxzjqasv3jsu5kxtk8ergnqdhuk3vfmnd8ss3hzc3q',
+                'codeHash': '7f7376f37a9f809a1a9b21b60a2a9afe7c9d22ab65807324f537ab3696110a58'
+            }
+        };
+
+        const result = await service.removeContractVerifierSource(requestBody);
+        expect(result).toEqual({
+            codeHash: '7f7376f37a9f809a1a9b21b60a2a9afe7c9d22ab65807324f537ab3696110a58',
+            source: 'eyJzY2hlbWFWZXJzaW9uIjoiMi4wLjAiLCJtZXRhZGF0YSI6eyJjb250cmFjdE5hbWUiOiJhZGRlciIsImNvbnRyYWN0VmVyc2lvbiI6IjAuMC4wIiwiYnVpbGRNZXRhZGF0YSI6eyJ2ZXJzaW9uUnVzdCI6IjEuODYuMCIsInZlcnNpb25TY1Rvb2wiOiIwLjU3LjEiLCJ2ZXJzaW9uV2FzbU9wdCI6IjAuMTE2LjEiLCJ0YXJnZXRQbGF0Zm9ybSI6ImxpbnV4L2FtZDY0In19fQ==',
+            status: 'success',
+            ipfsFileHash: 'QmR52Y13ZQbjnETjHsG6hLA7fgidyrWt1JVQDp6Ti1aD7N',
+            dockerImage: 'multiversx/sdk-rust-contract-builder:v10.0.0'
+        });
+
+        spy.mockRestore();
+    });
+
+    it('should throw invalid docker image', async () => {
+        // remove docker image from mock
+        const validatePayloadMockWithoutDockerImage = JSON.parse(JSON.stringify(validatePayloadMock));
+        validatePayloadMockWithoutDockerImage.payload.dockerImage = '';
+
+        const result = await service.validate(validatePayloadMockWithoutDockerImage);
+        expect(result).toEqual({
+            status: "error",
+            message: "Invalid docker image",
+        });
+    });
+
+    it('should throw docker execution error', async () => {
+        contractVerifierRepository.findOne.mockResolvedValue(verifiedContractMock);
+
+        jest.spyOn((service as any).dockerRunner, 'exec').mockRejectedValueOnce(new Error('Docker execution failed'));
+
+        const result = await service.validate(validatePayloadMock);
+        expect(result).toEqual({
+            status: "error",
+            message: "Contract build error",
+        });
+    });
+
+    it('should throw source code hash does not match', async () => {
+        contractVerifierRepository.findOne.mockResolvedValue(verifiedContractMock);
+
+        jest.spyOn((service as any).dockerRunner, 'exec').mockResolvedValueOnce('');
+
+        apiService.get.mockResolvedValue({
+            data: {
+                codeHash: Buffer.from('7f7376f37a9f809a1a9b21b60a2a9afe7c9d22ab65807324f537ab3696177777', 'hex').toString('base64'),
+            }
+        });
+
+        const result = await service.validate(validatePayloadMock);
+        expect(result).toEqual({
+            status: "error",
+            message: "Source code hashes do not match",
+        });
+    });
+
+    it('should throw pinata error', async () => {
+        contractVerifierRepository.findOne.mockResolvedValue(null);
+
+        jest.spyOn((service as any).dockerRunner, 'exec').mockResolvedValueOnce('');
+
+        apiService.get.mockResolvedValue({
+            data: {
+                codeHash: Buffer.from('7f7376f37a9f809a1a9b21b60a2a9afe7c9d22ab65807324f537ab3696110a58', 'hex').toString('base64'),
+            }
+        });
+
+        pinataService.uploadContent.mockImplementationOnce(async (_content) => {
+            return undefined;
+        });
+
+        const result = await service.validate(validatePayloadMock);
+        expect(result).toEqual({
+            status: "error",
+            message: "Could not upload to IPFS",
+        });
+    });
+
+    it('should validate contract', async () => {
+        contractVerifierRepository.findOne.mockResolvedValue(null);
+        contractVerifierRepository.save.mockResolvedValue();
+
+        jest.spyOn((service as any).dockerRunner, 'exec').mockResolvedValueOnce('');
+
+        apiService.get.mockResolvedValue({
+            data: {
+                codeHash: Buffer.from('7f7376f37a9f809a1a9b21b60a2a9afe7c9d22ab65807324f537ab3696110a58', 'hex').toString('base64'),
+            }
+        });
+
+        pinataService.uploadContent.mockImplementationOnce(async (_content) => {
+            return {
+                hash: pinataHash,
+                url: commonConfigService.config.pinata.fileStorageCdnUrl + '/' + pinataHash,
+            };
+        });
+
+        const result = await service.validate(validatePayloadMock);
+        expect(result).toEqual({
+            status: "success",
         });
     });
 });
