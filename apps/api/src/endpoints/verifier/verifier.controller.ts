@@ -1,5 +1,6 @@
 import { ContractVerifier, Verifier, VerifierCodeHashResponse, VerifierDeletion, VerifierResponse } from '@libs/common';
 import { TaskService, VerifierService } from '@libs/services';
+import { ParseAddressPipe, ParseBoolPipe, ParseIntPipe } from '@multiversx/sdk-nestjs-common';
 import {
   Body,
   Controller,
@@ -45,7 +46,7 @@ export class VerifierController {
   })
   @ApiParam({
     name: 'address',
-    description: 'The dependencies depth to be returned',
+    description: 'The bech32 address of the contract',
     required: true,
   })
   @ApiQuery({
@@ -59,9 +60,9 @@ export class VerifierController {
     required: false,
   })
   async getVerifier(
-    @Param('address') address: string,
-    @Query('depth') depth: number,
-    @Query('includeTestFiles') includeTestFiles: string,
+    @Param('address', ParseAddressPipe) address: string,
+    @Query('depth', ParseIntPipe) depth: number,
+    @Query('includeTestFiles', ParseBoolPipe) includeTestFiles: boolean,
   ): Promise<ContractVerifier> {
     return await this.verifierService.getContractVerifier(
       address,
@@ -86,7 +87,7 @@ export class VerifierController {
     required: true,
   })
   async getContractCodeHash(
-    @Param('address') address: string,
+    @Param('address', ParseAddressPipe) address: string,
   ): Promise<VerifierCodeHashResponse> {
     const data = await this.verifierService.getContractVerifierCodeHash(
       address,
@@ -96,7 +97,7 @@ export class VerifierController {
   }
 
   @Delete()
-  async deleteVerifier(@Body() argument: VerifierDeletion): Promise<any> {
+  async deleteVerifier(@Body() argument: VerifierDeletion): Promise<void> {
     return await this.verifierService.removeContractVerifierSource(argument);
   }
 }

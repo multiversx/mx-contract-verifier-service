@@ -1,6 +1,5 @@
 import {
   CommonConfigService,
-  ContractVerifierStatus,
   Task,
   TaskStatus,
   Verifier,
@@ -13,6 +12,7 @@ import {
   BadRequestException,
   Inject,
   Injectable,
+  InternalServerErrorException,
   Logger,
   RequestTimeoutException,
 } from '@nestjs/common';
@@ -43,17 +43,21 @@ export class TaskService {
       `Received verifier request for contract ${validate.payload.contract}`,
     );
 
-    const response = await this.apiService.get(
-      `${this.configService.config.urls.api}/accounts/${validate.payload.contract}`,
-    );
-
-    const ownerAddress = response?.data?.ownerAddress;
-    if (!ownerAddress) {
-      return {
-        status: ContractVerifierStatus.error,
-        message: 'Invalid contract address',
-      };
+    let response: any;
+    try {
+      response = await this.apiService.get(
+        `${this.configService.config.urls.api}/accounts/${validate.payload.contract}`,
+      );
+    } catch (error: any) {
+      this.logger.error(`Error fetching account data for contract ${validate.payload.contract}, error: ${error.message}`);
+      throw new InternalServerErrorException(`Failed to fetch account data for contract ${validate.payload.contract}`);
     }
+
+    const ownerAddress = response.data?.ownerAddress;
+    if (!ownerAddress) {
+      throw new BadRequestException('Could not determine owner address for the contract.');
+    }
+
     return await this.run('validate', { validate });
   }
 
