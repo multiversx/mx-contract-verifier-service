@@ -72,7 +72,7 @@ describe('WorkerCallbackService', () => {
 
       cacheService.getRemote.mockResolvedValue({
         status: TaskStatus.started,
-        started: new Date('2025-11-05T15:26:11.967Z')
+        started: new Date('2025-11-05T15:26:11.967Z'),
       });
 
       await service.updateStatus(taskId, TaskStatus.finished, result);
@@ -83,7 +83,7 @@ describe('WorkerCallbackService', () => {
           status: TaskStatus.finished,
           started: new Date('2025-11-05T15:26:11.967Z'),
           finished: new Date('2025-11-05T15:26:11.967Z'),
-          result
+          result,
         },
         Constants.oneHour()
       );
@@ -100,7 +100,7 @@ describe('WorkerCallbackService', () => {
 
       cacheService.getRemote.mockResolvedValue({
         status: TaskStatus.started,
-        started: new Date('2025-11-05T15:26:11.967Z')
+        started: new Date('2025-11-05T15:26:11.967Z'),
       });
 
       await service.updateStatus(taskId, TaskStatus.error, errorDetails);
@@ -111,7 +111,7 @@ describe('WorkerCallbackService', () => {
           status: TaskStatus.error,
           started: new Date('2025-11-05T15:26:11.967Z'),
           finished: new Date('2025-11-05T15:26:11.967Z'),
-          result: errorDetails
+          result: errorDetails,
         },
         Constants.oneHour()
       );

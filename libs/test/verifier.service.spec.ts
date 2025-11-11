@@ -15,8 +15,8 @@ jest.mock('fs', () => {
             }
         }),
         promises: {
-            writeFile: jest.fn(async () => undefined),
-            readFile: jest.fn(async (path) => {
+            writeFile: jest.fn(() => Promise.resolve(undefined)),
+            readFile: jest.fn((path) => {
                 if (path.includes('.source.json')) {
                     return Buffer.from(JSON.stringify({ schemaVersion: "2.0.0", metadata: { contractName: "adder" } }));
                 } else if (path.includes('.codehash.txt')) {
@@ -39,7 +39,7 @@ import { ContractVerifierRepository } from '../database/src';
 import { DockerRunner } from '../services/src/docker/docker.runner';
 import { PinataService } from '../services/src/pinata/pinata.service';
 import { VerifierService } from "../services/src/verifier";
-import { validatePayloadMock } from './mocks';
+import { validatePayloadMock } from './mocks/validate.payload.mock';
 
 describe('VerifierService', () => {
     let service: VerifierService;
@@ -71,31 +71,31 @@ describe('VerifierService', () => {
         commonConfigService = {
             config: {
                 urls: {
-                    api: 'https://devnet-api.multiversx.com'
+                    api: 'https://devnet-api.multiversx.com',
                 },
                 pinata: {
                     fileStorageCdnUrl: 'https://gateway.pinata.cloud/ipfs',
-                }
-            }
+                },
+            },
         } as any;
 
         contractVerifierRepository = {
             save: jest.fn(),
             findOne: jest.fn(),
             findVerified: jest.fn(),
-            delete: jest.fn()
+            delete: jest.fn(),
         } as any;
 
         pinataService = {
-            uploadContent: jest.fn()
+            uploadContent: jest.fn(),
         } as any;
 
         apiService = {
-            get: jest.fn()
+            get: jest.fn(),
         } as any;
 
         dockerRunner = {
-            exec: jest.fn()
+            exec: jest.fn(),
         } as any;
 
         const module: TestingModule = await Test.createTestingModule({
@@ -103,23 +103,23 @@ describe('VerifierService', () => {
                 VerifierService,
                 {
                     provide: CommonConfigService,
-                    useValue: commonConfigService
+                    useValue: commonConfigService,
                 },
                 {
                     provide: ContractVerifierRepository,
-                    useValue: contractVerifierRepository
+                    useValue: contractVerifierRepository,
                 },
                 {
                     provide: PinataService,
-                    useValue: pinataService
+                    useValue: pinataService,
                 },
                 {
                     provide: ApiService,
-                    useValue: apiService
+                    useValue: apiService,
                 },
                 {
                     provide: DockerRunner,
-                    useValue: dockerRunner
+                    useValue: dockerRunner,
                 },
             ],
         }).compile();
@@ -131,7 +131,7 @@ describe('VerifierService', () => {
         contractVerifierRepository.findOne.mockResolvedValue(null);
 
         apiService.get.mockResolvedValue({
-            data: {}
+            data: {},
         });
 
         await expect(service.getContractVerifier(mockAddress)).rejects.toThrow(
@@ -145,7 +145,7 @@ describe('VerifierService', () => {
         apiService.get.mockResolvedValue({
             data: {
                 codeHash: Buffer.from(mockCodeHash, 'hex').toString('base64'),
-            }
+            },
         });
 
         const result = await service.getContractVerifier(mockAddress);
@@ -164,10 +164,10 @@ describe('VerifierService', () => {
                         "versionRust": "1.86.0",
                         "versionScTool": "0.57.1",
                         "versionWasmOpt": "0.116.1",
-                        "targetPlatform": "linux/amd64"
-                    }
-                }
-            }
+                        "targetPlatform": "linux/amd64",
+                    },
+                },
+            },
         });
     });
 
@@ -195,15 +195,15 @@ describe('VerifierService', () => {
 
     it('should throw could not determine owner address - delete contract verifier', async () => {
         apiService.get.mockResolvedValue({
-            data: {}
+            data: {},
         });
 
         const requestBody = {
             'signature': '9cf0bfecf402a73c37733e78780bd4ddd3fec7f97831faf91b173a7715ce5822053ac20329fc004272d22e284a10da6f057df5a7783b11cfda1c90163d66b60f',
             'payload': {
                 'contract': 'erd1qqqqqqqqqqqqqpgqvxzjqasv3jsu5kxtk8ergnqdhuk3vfmnd8ss3hzc3q',
-                'codeHash': '7f7376f37a9f809a1a9b21b60a2a9afe7c9d22ab65807324f537ab3696110a58'
-            }
+                'codeHash': '7f7376f37a9f809a1a9b21b60a2a9afe7c9d22ab65807324f537ab3696110a58',
+            },
         };
 
         const result = await service.removeContractVerifierSource(requestBody);
@@ -217,15 +217,15 @@ describe('VerifierService', () => {
         apiService.get.mockResolvedValue({
             data: {
                 ownerAddress: 'erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th',
-            }
+            },
         });
 
         const requestBody = {
             'signature': '9cf0bfecf402a73c37733e78780bd4ddd3fec7f97831faf91b173a7715ce5822053ac20329fc004272d22e284a10da6f057df5a7783b11cfda1c90163d66b60a', // altered signature
             'payload': {
                 'contract': 'erd1qqqqqqqqqqqqqpgqvxzjqasv3jsu5kxtk8ergnqdhuk3vfmnd8ss3hzc3q',
-                'codeHash': '7f7376f37a9f809a1a9b21b60a2a9afe7c9d22ab65807324f537ab3696110a58'
-            }
+                'codeHash': '7f7376f37a9f809a1a9b21b60a2a9afe7c9d22ab65807324f537ab3696110a58',
+            },
         };
 
         const result = await service.removeContractVerifierSource(requestBody);
@@ -243,15 +243,15 @@ describe('VerifierService', () => {
         apiService.get.mockResolvedValue({
             data: {
                 ownerAddress: 'erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zp6hypefsdd8ssycr6th',
-            }
+            },
         });
 
         const requestBody = {
             'signature': 'd0d16d94bb8c3b391c69d370fd3ca1e1fbf757f68ce543c1ed4ab7fe3c1208731b797342a76aea94b9cabc39ceb4afb7ac5b7e35475c44f52bfd938f1a5c8b0d',
             'payload': {
                 'contract': 'erd1qqqqqqqqqqqqqpgq8uzcu905yt6xk7k6eg9gnhhxp6gk9swnd8sspla0v4',
-                'codeHash': '7f7376f37a9f809a1a9b21b60a2a9afe7c9d22ab65807324f537ab3696110a58'
-            }
+                'codeHash': '7f7376f37a9f809a1a9b21b60a2a9afe7c9d22ab65807324f537ab3696110a58',
+            },
         };
 
         const result = await service.removeContractVerifierSource(requestBody);
@@ -269,15 +269,15 @@ describe('VerifierService', () => {
         apiService.get.mockResolvedValue({
             data: {
                 ownerAddress: 'erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zp6hypefsdd8ssycr6th',
-            }
+            },
         });
 
         const requestBody = {
             'signature': '9cf0bfecf402a73c37733e78780bd4ddd3fec7f97831faf91b173a7715ce5822053ac20329fc004272d22e284a10da6f057df5a7783b11cfda1c90163d66b60f',
             'payload': {
                 'contract': 'erd1qqqqqqqqqqqqqpgqvxzjqasv3jsu5kxtk8ergnqdhuk3vfmnd8ss3hzc3q',
-                'codeHash': '7f7376f37a9f809a1a9b21b60a2a9afe7c9d22ab65807324f537ab3696110a58'
-            }
+                'codeHash': '7f7376f37a9f809a1a9b21b60a2a9afe7c9d22ab65807324f537ab3696110a58',
+            },
         };
 
         const result = await service.removeContractVerifierSource(requestBody);
@@ -286,7 +286,7 @@ describe('VerifierService', () => {
             source: 'eyJzY2hlbWFWZXJzaW9uIjoiMi4wLjAiLCJtZXRhZGF0YSI6eyJjb250cmFjdE5hbWUiOiJhZGRlciIsImNvbnRyYWN0VmVyc2lvbiI6IjAuMC4wIiwiYnVpbGRNZXRhZGF0YSI6eyJ2ZXJzaW9uUnVzdCI6IjEuODYuMCIsInZlcnNpb25TY1Rvb2wiOiIwLjU3LjEiLCJ2ZXJzaW9uV2FzbU9wdCI6IjAuMTE2LjEiLCJ0YXJnZXRQbGF0Zm9ybSI6ImxpbnV4L2FtZDY0In19fQ==',
             status: 'success',
             ipfsFileHash: 'QmR52Y13ZQbjnETjHsG6hLA7fgidyrWt1JVQDp6Ti1aD7N',
-            dockerImage: 'multiversx/sdk-rust-contract-builder:v10.0.0'
+            dockerImage: 'multiversx/sdk-rust-contract-builder:v10.0.0',
         });
 
         spy.mockRestore();
@@ -324,7 +324,7 @@ describe('VerifierService', () => {
         apiService.get.mockResolvedValue({
             data: {
                 codeHash: Buffer.from('7f7376f37a9f809a1a9b21b60a2a9afe7c9d22ab65807324f537ab3696177777', 'hex').toString('base64'),
-            }
+            },
         });
 
         const result = await service.validate(validatePayloadMock);
@@ -342,11 +342,11 @@ describe('VerifierService', () => {
         apiService.get.mockResolvedValue({
             data: {
                 codeHash: Buffer.from('7f7376f37a9f809a1a9b21b60a2a9afe7c9d22ab65807324f537ab3696110a58', 'hex').toString('base64'),
-            }
+            },
         });
 
-        pinataService.uploadContent.mockImplementationOnce(async (_content) => {
-            return undefined;
+        pinataService.uploadContent.mockImplementationOnce((_content) => {
+            return Promise.resolve(undefined);
         });
 
         const result = await service.validate(validatePayloadMock);
@@ -365,14 +365,14 @@ describe('VerifierService', () => {
         apiService.get.mockResolvedValue({
             data: {
                 codeHash: Buffer.from('7f7376f37a9f809a1a9b21b60a2a9afe7c9d22ab65807324f537ab3696110a58', 'hex').toString('base64'),
-            }
+            },
         });
 
-        pinataService.uploadContent.mockImplementationOnce(async (_content) => {
-            return {
+        pinataService.uploadContent.mockImplementationOnce((_content) => {
+            return Promise.resolve({
                 hash: pinataHash,
                 url: commonConfigService.config.pinata.fileStorageCdnUrl + '/' + pinataHash,
-            };
+            });
         });
 
         const result = await service.validate(validatePayloadMock);
