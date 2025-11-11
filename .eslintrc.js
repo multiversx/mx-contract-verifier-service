@@ -144,6 +144,13 @@ module.exports = {
           "patterns": ["@libs/services*"]
         }]
       }
-    }
+    },
+    {
+    "files": ["**/*.spec.ts", "**/*.mock.ts", "libs/test/**/*.ts"],
+    "rules": {
+      "boundaries/no-unknown-files": "off",
+      "boundaries/no-unknown": "off"
+    },
+  }
   ]
 };

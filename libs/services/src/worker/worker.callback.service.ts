@@ -1,6 +1,6 @@
-import { Task, TaskStatus } from "@libs/common";
 import { CacheService } from "@multiversx/sdk-nestjs-cache";
 import { Constants } from "@multiversx/sdk-nestjs-common";
+import { Task, TaskStatus } from "../../../common/src/dtos";
 
 import { Injectable, Logger } from "@nestjs/common";
 

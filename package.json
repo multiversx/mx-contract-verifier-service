@@ -21,7 +21,7 @@
     "nest-start": "sh -c 'nest start $NODE_APP $( [ \"$NODE_WATCH\" = \"true\" ] && echo \"--watch\" ) $( [ \"$NODE_DEBUG\" = \"true\" ] && echo \"--debug\" )'",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\"",
     "lint:fix": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
-    "test": "jest",
+    "test": "jest --config ./jest.config.ts",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",

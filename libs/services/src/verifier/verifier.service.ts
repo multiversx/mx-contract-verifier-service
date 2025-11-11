@@ -228,13 +228,12 @@ export class VerifierService {
       );
       return {
         status: ContractVerifierStatus.error,
-        message:
-          'Failed to remove contract verifier source due to internal error.',
+        message: 'Failed to remove contract verifier source due to internal error.',
       };
     }
   }
 
-  async deleteContractVerifier(
+  private async deleteContractVerifier(
     address: string,
   ): Promise<ContractVerifierModel | undefined> {
     const verifier = await this.getContractVerifierModel(address);
@@ -263,7 +262,6 @@ export class VerifierService {
     );
 
     const signableMessage = new Message({
-      address: new Address(ownerAddress),
       data: new Uint8Array(message),
     });
 
