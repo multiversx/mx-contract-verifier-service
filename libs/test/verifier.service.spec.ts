@@ -261,7 +261,7 @@ describe('VerifierService', () => {
     });
 
     it('should delete contract verifier', async () => {
-        const spy =jest.spyOn(service as any, 'checkPayloadSignature').mockImplementation(() => true);
+        const spy = jest.spyOn(service as any, 'checkPayloadSignature').mockImplementation(() => true);
 
         contractVerifierRepository.findOne.mockResolvedValue(verifiedContractMock);
         contractVerifierRepository.delete.mockResolvedValue(verifiedContractMock);
