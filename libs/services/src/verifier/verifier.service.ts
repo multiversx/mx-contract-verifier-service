@@ -13,10 +13,21 @@ import {
 } from '@libs/common';
 import { CommonConfigService } from '@libs/common/config/common.config.service';
 import { ContractVerifierRepository } from '@libs/database';
-import { Address, Message, MessageComputer, UserVerifier } from '@multiversx/sdk-core';
+import {
+  Address,
+  Message,
+  MessageComputer,
+  UserVerifier,
+} from '@multiversx/sdk-core';
 import { AddressUtils } from '@multiversx/sdk-nestjs-common';
 import { ApiService } from '@multiversx/sdk-nestjs-http';
-import { BadRequestException, Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import crypto from 'crypto';
 import fs from 'fs';
 import sanitizeFilename from 'sanitize-filename';
@@ -72,6 +83,12 @@ export class VerifierService {
     }
 
     const data = await this.getContractVerifierModel(address);
+    if (!data) {
+      this.logger.log(`No local data for address ${address}`);
+      throw new NotFoundException(
+        `Verified contract not found for address: ${address}`,
+      );
+    }
 
     let apiResponse: any;
     try {
@@ -79,19 +96,20 @@ export class VerifierService {
         `${this.commonConfigurationService.config.urls.api}/accounts/${address}`,
       );
     } catch (error: any) {
-      this.logger.error(`Error fetching account data for address ${address}, error: ${error.message}`);
-      throw new InternalServerErrorException(`Failed to fetch account data for address ${address}`);
+      this.logger.error(
+        `Error fetching account data for address ${address}, error: ${error.message}`,
+      );
+      throw new InternalServerErrorException(
+        `Failed to fetch account data for address ${address}`,
+      );
     }
-    const remoteCodeHash: string = apiResponse.data?.codeHash;
 
-    if (!data || !remoteCodeHash) {
-      if (!remoteCodeHash) {
-        this.logger.log(`No remote code hash for address ${address}`);
-      }
-      if (!data) {
-        this.logger.log(`No local data for address ${address}`);
-      }
-      throw new NotFoundException("Verified contract not found for the given address.");
+    const remoteCodeHash: string = apiResponse.data?.codeHash;
+    if (!remoteCodeHash) {
+      this.logger.log(`No remote code hash for address ${address}`);
+      throw new NotFoundException(
+        `Verified contract not found for address: ${address}`,
+      );
     }
 
     const returnedData: ContractVerifier = data as any;
@@ -156,9 +174,8 @@ export class VerifierService {
       }
     }
 
-    const result = await this.contractVerifierRepository.findVerified(
-      selectFields,
-    );
+    const result =
+      await this.contractVerifierRepository.findVerified(selectFields);
     return result.map((entry) => ({
       address: entry.address,
       status: entry.status,
@@ -178,13 +195,17 @@ export class VerifierService {
     address: string,
   ): Promise<VerifierCodeHashResponse> {
     if (!AddressUtils.isAddressValid(address)) {
-      throw new BadRequestException("Validation failed for 'address' argument. Expected a valid bech32 address.");
+      throw new BadRequestException(
+        "Validation failed for 'address' argument. Expected a valid bech32 address.",
+      );
     }
 
     const data = await this.getContractVerifierModel(address);
 
     if (!data) {
-      throw new NotFoundException("Verified contract not found for the given address.");
+      throw new NotFoundException(
+        'Verified contract not found for the given address.',
+      );
     }
 
     return { codeHash: data.codeHash || '' };
@@ -195,19 +216,27 @@ export class VerifierService {
   ): Promise<any> {
     let apiResponse: any;
     try {
-      apiResponse  = await this.apiService.get(
+      apiResponse = await this.apiService.get(
         `${this.commonConfigurationService.config.urls.api}/accounts/${body.payload.contract}`,
       );
     } catch (error: any) {
-      this.logger.error(`Error fetching account data for contract ${body.payload.contract}, error: ${error.message}`);
-      throw new InternalServerErrorException(`Failed to fetch account data for contract ${body.payload.contract}`);
+      this.logger.error(
+        `Error fetching account data for contract ${body.payload.contract}, error: ${error.message}`,
+      );
+      throw new InternalServerErrorException(
+        `Failed to fetch account data for contract ${body.payload.contract}`,
+      );
     }
 
     try {
       const ownerAddress = apiResponse.data?.ownerAddress;
       if (!ownerAddress) {
-          this.logger.error(`No owner address for contract ${body.payload.contract}`);
-          throw new BadRequestException('Could not determine owner address for the contract.');
+        this.logger.error(
+          `No owner address for contract ${body.payload.contract}`,
+        );
+        throw new BadRequestException(
+          'Could not determine owner address for the contract.',
+        );
       }
 
       if (
@@ -220,7 +249,14 @@ export class VerifierService {
       }
 
       const contractAddress = body.payload.contract;
-      return this.deleteContractVerifier(contractAddress);
+      const result = await this.deleteContractVerifier(contractAddress);
+      if (!result) {
+        throw new NotFoundException(
+          'Verified contract not found for the given address.',
+        );
+      }
+
+      return result;
     } catch (error: any) {
       this.logger.error(
         'Failed to remove contract verifier source:',
@@ -228,7 +264,7 @@ export class VerifierService {
       );
       return {
         status: ContractVerifierStatus.error,
-        message: 'Failed to remove contract verifier source due to internal error.',
+        message: `Failed to remove contract: ${error.message}`,
       };
     }
   }
@@ -255,20 +291,21 @@ export class VerifierService {
     const verifier = UserVerifier.fromAddress(new Address(ownerAddress));
     const message = Buffer.from(payload.contract + sha256);
 
-    const signatureAsBuffer = Buffer.from(signature, "hex");
-    const firstVerificationResult = verifier.verify(
-      message,
-      signatureAsBuffer,
-    );
+    const signatureAsBuffer = Buffer.from(signature, 'hex');
+    const firstVerificationResult = verifier.verify(message, signatureAsBuffer);
 
     const signableMessage = new Message({
       data: new Uint8Array(message),
     });
 
     const messageComputer = new MessageComputer();
-    const verifyBytes = messageComputer.computeBytesForVerifying(signableMessage);
+    const verifyBytes =
+      messageComputer.computeBytesForVerifying(signableMessage);
 
-    const secondVerificationResult = verifier.verify(verifyBytes, signatureAsBuffer);
+    const secondVerificationResult = verifier.verify(
+      verifyBytes,
+      signatureAsBuffer,
+    );
 
     return firstVerificationResult || secondVerificationResult;
   }
@@ -288,17 +325,19 @@ export class VerifierService {
     );
 
     const sourceCode = validateBody.payload.sourceCode;
-    const contractName = sanitizeFilename(sourceCode.name || sourceCode.metadata.contractName);
+    const contractName = sanitizeFilename(
+      sourceCode.name || sourceCode.metadata.contractName,
+    );
     const contractNameVariant = validateBody.payload.contractVariant
       ? sanitizeFilename(validateBody.payload.contractVariant)
       : undefined;
-    const contractVersion = sourceCode.version || sourceCode.metadata.contractVersion;
+    const contractVersion =
+      sourceCode.version || sourceCode.metadata.contractVersion;
     const dockerImage = validateBody.payload.dockerImage;
 
     if (
       !dockerImage ||
-      (dockerImage &&
-        dockerImage.split(':')[0] !== 'multiversx/sdk-rust-contract-builder')
+      dockerImage.split(':')[0] !== 'multiversx/sdk-rust-contract-builder'
     ) {
       return {
         status: ContractVerifierStatus.error,
@@ -317,14 +356,13 @@ export class VerifierService {
 
     const contractAddress = validateBody.payload.contract;
 
-    this.logger.log(`Write contract received source code temporary to: ${temporaryFile.name}`);
+    this.logger.log(
+      `Write contract received source code temporary to: ${temporaryFile.name}`,
+    );
 
     try {
       await writeFile(temporaryFile.fd, JSON.stringify(sourceCode));
 
-      const localData = await this.getContractVerifierModel(contractAddress);
-
-      this.logger.log('Execute docker');
       try {
         await this.dockerRunner.exec({
           image: dockerImage,
@@ -347,7 +385,9 @@ export class VerifierService {
         };
       }
       this.logger.log(`Docker build finished without errors - ${contractName}`);
-      this.logger.log(`Using temporary folder: ${temporaryFolder.name}/${contractName}`);
+      this.logger.log(
+        `Using temporary folder: ${temporaryFolder.name}/${contractName}`,
+      );
 
       const contractSourceFilePath = `${temporaryFolder.name}/${contractName}/${contractName}-${contractVersion}.source.json`;
 
@@ -361,7 +401,9 @@ export class VerifierService {
 
       this.logger.log(`Contract source read from ${contractSourceFilePath}`);
       this.logger.log(`Code hash read from ${codeHashFilePath} - ${codeHash}`);
-      this.logger.log(`Contract ABI file read from ${contractAbiFileSourcePath}`);
+      this.logger.log(
+        `Contract ABI file read from ${contractAbiFileSourcePath}`,
+      );
 
       let apiResponse;
       try {
@@ -369,17 +411,26 @@ export class VerifierService {
           `${this.commonConfigurationService.config.urls.api}/accounts/${contractAddress}`,
         );
       } catch (error: any) {
-        this.logger.error(`Error fetching account data for contract ${contractAddress}, error: ${error.message}`);
-        throw new InternalServerErrorException(`Failed to fetch account data for contract ${contractAddress}`);
+        this.logger.error(
+          `Error fetching account data for contract ${contractAddress}, error: ${error.message}`,
+        );
+        throw new InternalServerErrorException(
+          `Failed to fetch account data for contract ${contractAddress}`,
+        );
       }
 
       const remoteCodeHash = apiResponse.data?.codeHash;
       if (!remoteCodeHash) {
         this.logger.log(`No remote code hash for contract ${contractAddress}`);
-        throw new BadRequestException('Could not retrieve code hash for the contract.');
+        throw new BadRequestException(
+          'Could not retrieve code hash for the contract.',
+        );
       }
-      const hexRemoteCodeHash = Buffer.from(remoteCodeHash, 'base64').toString('hex');
+      const hexRemoteCodeHash = Buffer.from(remoteCodeHash, 'base64').toString(
+        'hex',
+      );
 
+      const localData = await this.getContractVerifierModel(contractAddress);
       if (
         localData &&
         localData.codeHash === codeHash.toString() &&
@@ -412,7 +463,8 @@ export class VerifierService {
         };
       }
 
-      const pinataData: PinataUpload | undefined = await this.pinataService.uploadContent(JSON.parse(source));
+      const pinataData: PinataUpload | undefined =
+        await this.pinataService.uploadContent(JSON.parse(source));
       if (!pinataData) {
         this.logger.log('Could not upload to IPFS');
         return {
