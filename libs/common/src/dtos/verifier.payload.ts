@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsObject, IsOptional, IsString } from 'class-validator';
 
 export class VerifierPayload {
   constructor(partial?: Partial<VerifierPayload>) {
@@ -17,11 +17,12 @@ export class VerifierPayload {
   dockerImage: string = '';
 
   @ApiProperty({ description: 'Source code.' })
-  @IsString()
+  @IsObject()
   @IsNotEmpty()
   sourceCode: any;
 
   @ApiPropertyOptional({ description: 'Optional contract name' })
   @IsString()
+  @IsOptional()
   contractVariant?: string;
 }

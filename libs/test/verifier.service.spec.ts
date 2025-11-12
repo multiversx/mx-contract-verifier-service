@@ -32,7 +32,7 @@ jest.mock('fs', () => {
 });
 
 import { ApiService } from '@multiversx/sdk-nestjs-http';
-import { Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { CommonConfigService, ContractVerifierStatus } from "../common/src";
 import { ContractVerifierRepository } from '../database/src';
@@ -135,7 +135,7 @@ describe('VerifierService', () => {
         });
 
         await expect(service.getContractVerifier(mockAddress)).rejects.toThrow(
-            new NotFoundException('Verified contract not found for the given address.')
+            new NotFoundException('Verified contract not found for address: erd1qqqqqqqqqqqqqpgqvxzjqasv3jsu5kxtk8ergnqdhuk3vfmnd8ss3hzc3q')
         );
     });
 
@@ -182,7 +182,7 @@ describe('VerifierService', () => {
         contractVerifierRepository.findOne.mockResolvedValue(null);
 
         await expect(service.getContractVerifierCodeHash(mockAddress)).rejects.toThrow(
-            new NotFoundException('Verified contract not found for the given address.')
+            new NotFoundException('Verified contract not found for address: erd1qqqqqqqqqqqqqpgqvxzjqasv3jsu5kxtk8ergnqdhuk3vfmnd8ss3hzc3q')
         );
     });
 
@@ -206,11 +206,9 @@ describe('VerifierService', () => {
             },
         };
 
-        const result = await service.removeContractVerifierSource(requestBody);
-        expect(result).toEqual({
-            status: ContractVerifierStatus.error,
-            message: 'Failed to remove contract verifier source due to internal error.',
-        });
+        await expect(service.removeContractVerifierSource(requestBody)).rejects.toThrow(
+            new BadRequestException('Could not determine owner address for the contract.')
+        );
     });
 
     it('should return invalid signature - delete contract verifier', async () => {
@@ -228,14 +226,12 @@ describe('VerifierService', () => {
             },
         };
 
-        const result = await service.removeContractVerifierSource(requestBody);
-        expect(result).toEqual({
-            status: ContractVerifierStatus.error,
-            message: 'Invalid signature',
-        });
+        await expect(service.removeContractVerifierSource(requestBody)).rejects.toThrow(
+            new UnauthorizedException('Invalid signature')
+        );
     });
 
-    it('should return undefined for invalid contract - delete contract verifier', async () => {
+    it('should throw error for not verified contract - delete contract verifier', async () => {
         const spy = jest.spyOn(service as any, 'checkPayloadSignature').mockImplementation(() => true);
 
         contractVerifierRepository.findOne.mockResolvedValue(null);
@@ -254,8 +250,9 @@ describe('VerifierService', () => {
             },
         };
 
-        const result = await service.removeContractVerifierSource(requestBody);
-        expect(result).toBeUndefined();
+        await expect(service.removeContractVerifierSource(requestBody)).rejects.toThrow(
+            new NotFoundException('Verified contract not found for address: erd1qqqqqqqqqqqqqpgq8uzcu905yt6xk7k6eg9gnhhxp6gk9swnd8sspla0v4')
+        );
 
         spy.mockRestore();
     });

@@ -10,6 +10,7 @@ export class Verifier {
 
   @ApiProperty({ description: 'Payload signature', type: String })
   @IsString()
+  @IsNotEmpty()
   signature: string = '';
 
   @ApiProperty({ description: 'Payload', type: VerifierPayload })

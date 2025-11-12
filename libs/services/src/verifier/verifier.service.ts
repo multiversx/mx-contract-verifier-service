@@ -27,6 +27,7 @@ import {
   InternalServerErrorException,
   Logger,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import crypto from 'crypto';
 import fs from 'fs';
@@ -204,7 +205,7 @@ export class VerifierService {
 
     if (!data) {
       throw new NotFoundException(
-        'Verified contract not found for the given address.',
+        `Verified contract not found for address: ${address}`,
       );
     }
 
@@ -228,45 +229,31 @@ export class VerifierService {
       );
     }
 
-    try {
-      const ownerAddress = apiResponse.data?.ownerAddress;
-      if (!ownerAddress) {
-        this.logger.error(
-          `No owner address for contract ${body.payload.contract}`,
-        );
-        throw new BadRequestException(
-          'Could not determine owner address for the contract.',
-        );
-      }
-
-      if (
-        !this.checkPayloadSignature(body.signature, body.payload, ownerAddress)
-      ) {
-        return {
-          status: ContractVerifierStatus.error,
-          message: 'Invalid signature',
-        };
-      }
-
-      const contractAddress = body.payload.contract;
-      const result = await this.deleteContractVerifier(contractAddress);
-      if (!result) {
-        throw new NotFoundException(
-          'Verified contract not found for the given address.',
-        );
-      }
-
-      return result;
-    } catch (error: any) {
+    const ownerAddress = apiResponse.data?.ownerAddress;
+    if (!ownerAddress) {
       this.logger.error(
-        'Failed to remove contract verifier source:',
-        error.message,
+        `No owner address for contract ${body.payload.contract}`,
       );
-      return {
-        status: ContractVerifierStatus.error,
-        message: `Failed to remove contract: ${error.message}`,
-      };
+      throw new BadRequestException(
+        'Could not determine owner address for the contract.',
+      );
     }
+
+    if (
+      !this.checkPayloadSignature(body.signature, body.payload, ownerAddress)
+    ) {
+      throw new UnauthorizedException('Invalid signature');
+    }
+
+    const contractAddress = body.payload.contract;
+    const result = await this.deleteContractVerifier(contractAddress);
+    if (!result) {
+      throw new NotFoundException(
+        `Verified contract not found for address: ${contractAddress}`,
+      );
+    }
+
+    return result;
   }
 
   private async deleteContractVerifier(

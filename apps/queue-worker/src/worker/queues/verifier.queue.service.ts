@@ -27,6 +27,6 @@ export class VerifierQueueService {
 
   @OnQueueFailed()
   handleFailed(job: Job, error: Error) {
-    this.logger.error(`Job ${job.id}, from queue ${job.queue.name} , ${job.data} failed: ${error.message}.`, error.stack);
+    this.logger.error(`Job ${job.id}, with payload ${JSON.stringify(job.data.data.validate)} failed: ${error.message}.`, error.stack);
   }
 }
