@@ -1,33 +1,18 @@
-import { CacheInfo } from "@libs/common/utils/cache.info";
-import { CacheService } from "@multiversx/sdk-nestjs-cache";
+import { VerifierService } from "@libs/services";
 import { Locker } from "@multiversx/sdk-nestjs-common";
-import { Inject, Injectable } from "@nestjs/common";
-import { ClientProxy } from "@nestjs/microservices";
-import { Cron } from "@nestjs/schedule";
+import { Injectable } from "@nestjs/common";
+import { Cron, CronExpression } from "@nestjs/schedule";
 
 @Injectable()
 export class WarmerService {
   constructor(
-    private readonly cachingService: CacheService,
-    @Inject('PUBSUB_SERVICE') private clientProxy: ClientProxy,
+    private readonly verifierService: VerifierService,
   ) { }
 
-  @Cron('* * * * *')
-  async handleExampleInvalidations() {
-    await Locker.lock('Example invalidations', async () => {
-      const examples: any = [];
-      await this.invalidateKey(CacheInfo.Examples.key, examples, CacheInfo.Examples.ttl);
+  @Cron(CronExpression.EVERY_HOUR)
+  async handleVerifiedContractsWhereBytecodeChanged() {
+    await Locker.lock('remove verified contracts where bytecode changed', async () => {
+      await this.verifierService.deleteVerifiedContractsIfByteCodeChanged();
     }, true);
-  }
-
-  private async invalidateKey<T>(key: string, data: T, ttl: number) {
-    await Promise.all([
-      this.cachingService.set(key, data, ttl),
-      this.deleteCacheKey(key),
-    ]);
-  }
-
-  private async deleteCacheKey(key: string) {
-    await this.clientProxy.emit('deleteCacheKeys', [key]);
   }
 }

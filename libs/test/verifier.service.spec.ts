@@ -31,6 +31,7 @@ jest.mock('fs', () => {
     };
 });
 
+import { CacheService } from '@multiversx/sdk-nestjs-cache';
 import { ApiService } from '@multiversx/sdk-nestjs-http';
 import { BadRequestException, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -48,6 +49,7 @@ describe('VerifierService', () => {
     let pinataService: jest.Mocked<PinataService>;
     let apiService: jest.Mocked<ApiService>;
     let dockerRunner: jest.Mocked<DockerRunner>;
+    let cacheService: jest.Mocked<CacheService>;
 
     const mockAddress = 'erd1qqqqqqqqqqqqqpgqvxzjqasv3jsu5kxtk8ergnqdhuk3vfmnd8ss3hzc3q';
     const mockCodeHash = '7f7376f37a9f809a1a9b21b60a2a9afe7c9d22ab65807324f537ab3696110a58';
@@ -98,6 +100,10 @@ describe('VerifierService', () => {
             exec: jest.fn(),
         } as any;
 
+        cacheService = {
+            getOrSet: jest.fn(),
+        } as any;
+
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 VerifierService,
@@ -121,6 +127,10 @@ describe('VerifierService', () => {
                     provide: DockerRunner,
                     useValue: dockerRunner,
                 },
+                {
+                    provide: CacheService,
+                    useValue: cacheService,
+                },
             ],
         }).compile();
 
@@ -141,6 +151,9 @@ describe('VerifierService', () => {
 
     it('should get contract verifier info', async () => {
         contractVerifierRepository.findOne.mockResolvedValue(verifiedContractMock);
+        cacheService.getOrSet.mockImplementation((_key, callback) => {
+            return Promise.resolve(callback());
+        });
 
         apiService.get.mockResolvedValue({
             data: {
@@ -188,6 +201,9 @@ describe('VerifierService', () => {
 
     it('should get codeHash of the verified contract', async () => {
         contractVerifierRepository.findOne.mockResolvedValue(verifiedContractMock);
+        cacheService.getOrSet.mockImplementation((_key, callback) => {
+            return Promise.resolve(callback());
+        });
 
         const result = await service.getContractVerifierCodeHash(mockAddress);
         expect(result).toEqual({ codeHash: mockCodeHash });
@@ -259,6 +275,10 @@ describe('VerifierService', () => {
 
     it('should delete contract verifier', async () => {
         const spy = jest.spyOn(service as any, 'checkPayloadSignature').mockImplementation(() => true);
+
+        cacheService.getOrSet.mockImplementation((_key, callback) => {
+            return Promise.resolve(callback());
+        });
 
         contractVerifierRepository.findOne.mockResolvedValue(verifiedContractMock);
         contractVerifierRepository.delete.mockResolvedValue(verifiedContractMock);

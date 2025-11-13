@@ -1,4 +1,5 @@
 import {
+  CacheInfo,
   ContractVerifier,
   ContractVerifierModel,
   ContractVerifierOutModel,
@@ -19,6 +20,7 @@ import {
   MessageComputer,
   UserVerifier,
 } from '@multiversx/sdk-core';
+import { CacheService } from '@multiversx/sdk-nestjs-cache';
 import { AddressUtils } from '@multiversx/sdk-nestjs-common';
 import { ApiService } from '@multiversx/sdk-nestjs-http';
 import {
@@ -51,12 +53,23 @@ export class VerifierService {
     private readonly contractVerifierRepository: ContractVerifierRepository,
     private readonly pinataService: PinataService,
     private readonly apiService: ApiService,
+    private readonly cacheService: CacheService,
   ) {
     this.dockerRunner = new DockerRunner();
     this.logger = new Logger(VerifierService.name);
   }
 
   private async getContractVerifierModel(
+    address: string,
+  ): Promise<ContractVerifierModel | undefined> {
+    return await this.cacheService.getOrSet(
+      CacheInfo.VerifiedContractModel.key + address,
+      async () => await this.getContractVerifierModelFromDb(address),
+      CacheInfo.VerifiedContractModel.ttl
+    );
+  }
+
+  private async getContractVerifierModelFromDb(
     address: string,
   ): Promise<ContractVerifierModel | undefined> {
     const result = await this.contractVerifierRepository.findOne(address);
@@ -175,8 +188,8 @@ export class VerifierService {
       }
     }
 
-    const result =
-      await this.contractVerifierRepository.findVerified(selectFields);
+    const result = await this.contractVerifierRepository.findVerified(selectFields);
+
     return result.map((entry) => ({
       address: entry.address,
       status: entry.status,
@@ -190,6 +203,59 @@ export class VerifierService {
   public async getVerifiedContracts(): Promise<string[]> {
     const data = await this.getVerifiedContractsOutModel(['address']);
     return data.map((contract) => contract.address || '');
+  }
+
+  private async getVerifiedContractsAndCodeHashes(): Promise<
+    { address: string; codeHash: string }[]
+  > {
+    const data = await this.getVerifiedContractsOutModel([
+      'address',
+      'codeHash',
+    ]);
+
+    const result = data.map((contract) => ({
+      address: contract.address || '',
+      codeHash: contract.codeHash || '',
+    }));
+
+    return result;
+  }
+
+  public async deleteVerifiedContractsIfByteCodeChanged(): Promise<void> {
+    const verifiedContracts = await this.getVerifiedContractsAndCodeHashes();
+
+    for (const contract of verifiedContracts) {
+      let apiResponse: any;
+      try {
+        apiResponse = await this.apiService.get(
+          `${this.commonConfigurationService.config.urls.api}/accounts/${contract.address}`,
+        );
+      } catch (error: any) {
+        this.logger.error(
+          `Error fetching account data for contract ${contract.address}, error: ${error.message}`,
+        );
+        continue;
+      }
+
+      const remoteCodeHash: string = apiResponse.data?.codeHash;
+      if (!remoteCodeHash) {
+        this.logger.log(
+          `No remote code hash for contract ${contract.address}`,
+        );
+        continue;
+      }
+
+      const hexRemoteCodeHash = Buffer.from(remoteCodeHash, 'base64').toString(
+        'hex',
+      );
+
+      if (contract.codeHash !== hexRemoteCodeHash) {
+        this.logger.log(
+          `Deleting verified contract ${contract.address} as bytecode changed`,
+        );
+        await this.deleteContractVerifier(contract.address);
+      }
+    }
   }
 
   public async getContractVerifierCodeHash(
