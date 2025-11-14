@@ -14,12 +14,7 @@ import {
 } from '@libs/common';
 import { CommonConfigService } from '@libs/common/config/common.config.service';
 import { ContractVerifierRepository } from '@libs/database';
-import {
-  Address,
-  Message,
-  MessageComputer,
-  UserVerifier,
-} from '@multiversx/sdk-core';
+import { Address, Message, MessageComputer, UserVerifier } from '@multiversx/sdk-core';
 import { CacheService } from '@multiversx/sdk-nestjs-cache';
 import { AddressUtils } from '@multiversx/sdk-nestjs-common';
 import { ApiService } from '@multiversx/sdk-nestjs-http';
@@ -65,7 +60,7 @@ export class VerifierService {
     return await this.cacheService.getOrSet(
       CacheInfo.VerifiedContractModel.key + address,
       async () => await this.getContractVerifierModelFromDb(address),
-      CacheInfo.VerifiedContractModel.ttl
+      CacheInfo.VerifiedContractModel.ttl,
     );
   }
 
@@ -99,9 +94,7 @@ export class VerifierService {
     const data = await this.getContractVerifierModel(address);
     if (!data) {
       this.logger.log(`No local data for address ${address}`);
-      throw new NotFoundException(
-        `Verified contract not found for address: ${address}`,
-      );
+      throw new NotFoundException(`Verified contract not found for address: ${address}`);
     }
 
     let apiResponse: any;
@@ -121,36 +114,27 @@ export class VerifierService {
     const remoteCodeHash: string = apiResponse.data?.codeHash;
     if (!remoteCodeHash) {
       this.logger.log(`No remote code hash for address ${address}`);
-      throw new NotFoundException(
-        `Verified contract not found for address: ${address}`,
-      );
+      throw new NotFoundException(`Verified contract not found for address: ${address}`);
     }
 
     const returnedData: ContractVerifier = data as any;
 
-    if (
-      data.codeHash !== Buffer.from(remoteCodeHash, 'base64').toString('hex')
-    ) {
+    if (data.codeHash !== Buffer.from(remoteCodeHash, 'base64').toString('hex')) {
       return {
         status: ContractVerifierStatus.byteCodeChangedSinceLastVerification,
       };
     }
 
     if (data.source) {
-      returnedData.source = JSON.parse(
-        Buffer.from(data.source, 'base64').toString(),
-      );
+      returnedData.source = JSON.parse(Buffer.from(data.source, 'base64').toString());
     }
 
     // Filter result by depth
     if (returnedData.source?.contract && dependencyDepth > -1) {
-      returnedData.source.contract.entries =
-        returnedData.source.contract.entries.filter((entry: any) => {
+      returnedData.source.contract.entries = returnedData.source.contract.entries.filter(
+        (entry: any) => {
           // Filter out everything that is under /wasm/src*
-          if (
-            entry.path.startsWith('wasm/src/') ||
-            entry.path.includes('/wasm/src/')
-          ) {
+          if (entry.path.startsWith('wasm/src/') || entry.path.includes('/wasm/src/')) {
             return false;
           }
 
@@ -172,7 +156,8 @@ export class VerifierService {
           }
 
           return false;
-        });
+        },
+      );
     }
 
     return returnedData;
@@ -208,15 +193,17 @@ export class VerifierService {
   private async getVerifiedContractsAndCodeHashes(): Promise<
     { address: string; codeHash: string }[]
   > {
-    const data = await this.getVerifiedContractsOutModel([
-      'address',
-      'codeHash',
-    ]);
+    const data = await this.getVerifiedContractsOutModel(['address', 'codeHash']);
 
-    const result = data.map((contract) => ({
-      address: contract.address || '',
-      codeHash: contract.codeHash || '',
-    }));
+    const result = data
+      .filter(
+        (contract): contract is { address: string; codeHash: string } =>
+          typeof contract.address === 'string' && typeof contract.codeHash === 'string',
+      )
+      .map((contract) => ({
+        address: contract.address,
+        codeHash: contract.codeHash,
+      }));
 
     return result;
   }
@@ -239,15 +226,11 @@ export class VerifierService {
 
       const remoteCodeHash: string = apiResponse.data?.codeHash;
       if (!remoteCodeHash) {
-        this.logger.log(
-          `No remote code hash for contract ${contract.address}`,
-        );
+        this.logger.log(`No remote code hash for contract ${contract.address}`);
         continue;
       }
 
-      const hexRemoteCodeHash = Buffer.from(remoteCodeHash, 'base64').toString(
-        'hex',
-      );
+      const hexRemoteCodeHash = Buffer.from(remoteCodeHash, 'base64').toString('hex');
 
       if (contract.codeHash !== hexRemoteCodeHash) {
         this.logger.log(
@@ -270,17 +253,13 @@ export class VerifierService {
     const data = await this.getContractVerifierModel(address);
 
     if (!data) {
-      throw new NotFoundException(
-        `Verified contract not found for address: ${address}`,
-      );
+      throw new NotFoundException(`Verified contract not found for address: ${address}`);
     }
 
     return { codeHash: data.codeHash || '' };
   }
 
-  public async removeContractVerifierSource(
-    body: VerifierDeletion,
-  ): Promise<any> {
+  public async removeContractVerifierSource(body: VerifierDeletion): Promise<any> {
     let apiResponse: any;
     try {
       apiResponse = await this.apiService.get(
@@ -297,17 +276,13 @@ export class VerifierService {
 
     const ownerAddress = apiResponse.data?.ownerAddress;
     if (!ownerAddress) {
-      this.logger.error(
-        `No owner address for contract ${body.payload.contract}`,
-      );
+      this.logger.error(`No owner address for contract ${body.payload.contract}`);
       throw new BadRequestException(
         'Could not determine owner address for the contract.',
       );
     }
 
-    if (
-      !this.checkPayloadSignature(body.signature, body.payload, ownerAddress)
-    ) {
+    if (!this.checkPayloadSignature(body.signature, body.payload, ownerAddress)) {
       throw new UnauthorizedException('Invalid signature');
     }
 
@@ -352,13 +327,9 @@ export class VerifierService {
     });
 
     const messageComputer = new MessageComputer();
-    const verifyBytes =
-      messageComputer.computeBytesForVerifying(signableMessage);
+    const verifyBytes = messageComputer.computeBytesForVerifying(signableMessage);
 
-    const secondVerificationResult = verifier.verify(
-      verifyBytes,
-      signatureAsBuffer,
-    );
+    const secondVerificationResult = verifier.verify(verifyBytes, signatureAsBuffer);
 
     return firstVerificationResult || secondVerificationResult;
   }
@@ -384,8 +355,7 @@ export class VerifierService {
     const contractNameVariant = validateBody.payload.contractVariant
       ? sanitizeFilename(validateBody.payload.contractVariant)
       : undefined;
-    const contractVersion =
-      sourceCode.version || sourceCode.metadata.contractVersion;
+    const contractVersion = sourceCode.version || sourceCode.metadata.contractVersion;
     const dockerImage = validateBody.payload.dockerImage;
 
     if (
@@ -438,9 +408,7 @@ export class VerifierService {
         };
       }
       this.logger.log(`Docker build finished without errors - ${contractName}`);
-      this.logger.log(
-        `Using temporary folder: ${temporaryFolder.name}/${contractName}`,
-      );
+      this.logger.log(`Using temporary folder: ${temporaryFolder.name}/${contractName}`);
 
       const contractSourceFilePath = `${temporaryFolder.name}/${contractName}/${contractName}-${contractVersion}.source.json`;
 
@@ -454,9 +422,7 @@ export class VerifierService {
 
       this.logger.log(`Contract source read from ${contractSourceFilePath}`);
       this.logger.log(`Code hash read from ${codeHashFilePath} - ${codeHash}`);
-      this.logger.log(
-        `Contract ABI file read from ${contractAbiFileSourcePath}`,
-      );
+      this.logger.log(`Contract ABI file read from ${contractAbiFileSourcePath}`);
 
       let apiResponse;
       try {
@@ -475,13 +441,9 @@ export class VerifierService {
       const remoteCodeHash = apiResponse.data?.codeHash;
       if (!remoteCodeHash) {
         this.logger.log(`No remote code hash for contract ${contractAddress}`);
-        throw new BadRequestException(
-          'Could not retrieve code hash for the contract.',
-        );
+        throw new BadRequestException('Could not retrieve code hash for the contract.');
       }
-      const hexRemoteCodeHash = Buffer.from(remoteCodeHash, 'base64').toString(
-        'hex',
-      );
+      const hexRemoteCodeHash = Buffer.from(remoteCodeHash, 'base64').toString('hex');
 
       const localData = await this.getContractVerifierModel(contractAddress);
       if (
@@ -516,8 +478,9 @@ export class VerifierService {
         };
       }
 
-      const pinataData: PinataUpload | undefined =
-        await this.pinataService.uploadContent(JSON.parse(source));
+      const pinataData: PinataUpload | undefined = await this.pinataService.uploadContent(
+        JSON.parse(source),
+      );
       if (!pinataData) {
         this.logger.log('Could not upload to IPFS');
         return {
