@@ -74,7 +74,10 @@ export class VerifierService {
 
     return {
       codeHash: result.codeHash,
-      source: result.source?.contract,
+      source: {
+        abi: result.source?.abi,
+        contract: result.source?.contract,
+      },
       status: result.status,
       ipfsFileHash: result.ipfsFileHash,
       dockerImage: result.dockerImage,
@@ -126,7 +129,10 @@ export class VerifierService {
     }
 
     if (data.source) {
-      returnedData.source = JSON.parse(Buffer.from(data.source, 'base64').toString());
+      returnedData.source = {
+        abi: JSON.parse(Buffer.from(data.source.abi, 'base64').toString()),
+        contract: JSON.parse(Buffer.from(data.source.contract, 'base64').toString())
+      };
     }
 
     // Filter result by depth
@@ -407,6 +413,7 @@ export class VerifierService {
           message: 'Contract build error',
         };
       }
+
       this.logger.log(`Docker build finished without errors - ${contractName}`);
       this.logger.log(`Using temporary folder: ${temporaryFolder.name}/${contractName}`);
 
@@ -418,7 +425,7 @@ export class VerifierService {
 
       const contractSource = await readFile(contractSourceFilePath);
       const codeHash = await readFile(codeHashFilePath);
-      const contractAbiFile = await readFile(contractAbiFileSourcePath);
+      const contractAbi = await readFile(contractAbiFileSourcePath);
 
       this.logger.log(`Contract source read from ${contractSourceFilePath}`);
       this.logger.log(`Code hash read from ${codeHashFilePath} - ${codeHash}`);
@@ -445,29 +452,6 @@ export class VerifierService {
       }
       const hexRemoteCodeHash = Buffer.from(remoteCodeHash, 'base64').toString('hex');
 
-      const localData = await this.getContractVerifierModel(contractAddress);
-      if (
-        localData &&
-        localData.codeHash === codeHash.toString() &&
-        hexRemoteCodeHash === localData.codeHash
-      ) {
-        await this.changeContractVerifierStatusTo(
-          contractAddress,
-          ContractVerifierStatus.success,
-        );
-        this.logger.log(
-          `${ContractVerifierStatus.success} - ${localData.codeHash} - ${hexRemoteCodeHash}`,
-        );
-        return {
-          status: ContractVerifierStatus.success,
-        };
-      }
-
-      const source = JSON.stringify({
-        abi: JSON.parse(contractAbiFile.toString()),
-        contract: JSON.parse(contractSource.toString()),
-      });
-
       if (hexRemoteCodeHash !== codeHash.toString()) {
         this.logger.log(
           `Source code hashes do not match - ${codeHash.toString()} - ${hexRemoteCodeHash}`,
@@ -478,9 +462,15 @@ export class VerifierService {
         };
       }
 
+      const source = {
+        abi: JSON.parse(contractAbi.toString()),
+        contract: JSON.parse(contractSource.toString()),
+      };
+
       const pinataData: PinataUpload | undefined = await this.pinataService.uploadContent(
-        JSON.parse(source),
+        source,
       );
+
       if (!pinataData) {
         this.logger.log('Could not upload to IPFS');
         return {
@@ -490,7 +480,8 @@ export class VerifierService {
       }
 
       const code = new ContractVerifierSource();
-      code.contract = Buffer.from(source).toString('base64');
+      code.abi = contractAbi.toString('base64');
+      code.contract = contractSource.toString('base64');
 
       await this.contractVerifierRepository.save(contractAddress, {
         source: code,

@@ -13,14 +13,14 @@ export class PinataService {
     this.logger = new Logger(PinataService.name);
   }
 
-  async uploadContent(content: String): Promise<PinataUpload | undefined> {
+  async uploadContent(content: any): Promise<PinataUpload | undefined> {
     const url = `${this.configurationService.config.pinata.pinataUrl}/pinning/pinJSONToIPFS`;
 
     try {
       const response = await axios.post(
         url,
         {
-          content,
+          pinataContent: content,
         },
         {
           headers: {
