@@ -58,9 +58,9 @@ export class VerifierService {
     address: string,
   ): Promise<ContractVerifierModel | undefined> {
     return await this.cacheService.getOrSet(
-      CacheInfo.VerifiedContractModel.key + address,
+      CacheInfo.VerifiedContractModel(address).key,
       async () => await this.getContractVerifierModelFromDb(address),
-      CacheInfo.VerifiedContractModel.ttl,
+      CacheInfo.VerifiedContractModel(address).ttl,
     );
   }
 
@@ -120,9 +120,7 @@ export class VerifierService {
     const returnedData: ContractVerifier = data as any;
 
     if (data.codeHash !== Buffer.from(remoteCodeHash, 'base64').toString('hex')) {
-      return {
-        status: ContractVerifierStatus.byteCodeChangedSinceLastVerification,
-      };
+      returnedData.status = ContractVerifierStatus.byteCodeChangedSinceLastVerification;
     }
 
     if (data.source) {
@@ -190,6 +188,33 @@ export class VerifierService {
     return data.map((contract) => contract.address || '');
   }
 
+  public async getOutdatedContracts(): Promise<string[]> {
+    const data = await this.getOutdatedContractsOutModel(['address']);
+    return data.map((contract) => contract.address || '');
+  }
+
+  private async getOutdatedContractsOutModel(
+    fieldsToInclude?: (keyof ContractVerifierOutModel)[],
+  ): Promise<Partial<ContractVerifierOutModel>[]> {
+    const selectFields: Record<string, number> = {};
+    if (fieldsToInclude) {
+      for (const field of fieldsToInclude) {
+        selectFields[field] = 1;
+      }
+    }
+
+    const result = await this.contractVerifierRepository.findOutdated(selectFields);
+
+    return result.map((entry) => ({
+      address: entry.address,
+      status: entry.status,
+      codeHash: entry.codeHash,
+      ipfsFileHash: entry.ipfsFileHash,
+      dockerImage: entry.dockerImage,
+      source: entry.source?.contract,
+    }));
+  }
+
   private async getVerifiedContractsAndCodeHashes(): Promise<
     { address: string; codeHash: string }[]
   > {
@@ -208,7 +233,7 @@ export class VerifierService {
     return result;
   }
 
-  public async deleteVerifiedContractsIfByteCodeChanged(): Promise<void> {
+  public async changeContractStatusIfByteCodeChanged(): Promise<void> {
     const verifiedContracts = await this.getVerifiedContractsAndCodeHashes();
 
     for (const contract of verifiedContracts) {
@@ -234,9 +259,12 @@ export class VerifierService {
 
       if (contract.codeHash !== hexRemoteCodeHash) {
         this.logger.log(
-          `Deleting verified contract ${contract.address} as bytecode changed`,
+          `Changing status for verified contract ${contract.address} as bytecode changed`,
         );
-        await this.deleteContractVerifier(contract.address);
+        await this.changeContractVerifierStatusTo(
+          contract.address,
+          ContractVerifierStatus.byteCodeChangedSinceLastVerification,
+        );
       }
     }
   }
