@@ -11,8 +11,8 @@ export class WarmerService {
 
   @Cron(CronExpression.EVERY_HOUR)
   async handleVerifiedContractsWhereBytecodeChanged() {
-    await Locker.lock('remove verified contracts where bytecode changed', async () => {
-      await this.verifierService.deleteVerifiedContractsIfByteCodeChanged();
+    await Locker.lock('update status for verified contracts where bytecode changed', async () => {
+      await this.verifierService.changeContractStatusIfByteCodeChanged();
     }, true);
   }
 }

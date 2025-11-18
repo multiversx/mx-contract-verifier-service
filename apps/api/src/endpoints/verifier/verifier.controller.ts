@@ -37,6 +37,17 @@ export class VerifierController {
     return await this.verifierService.getVerifiedContracts();
   }
 
+  @Get('/outdated')
+  @ApiResponse({
+    status: 200,
+    description: 'Returns the list of contracts where bytecode has changed since last verification',
+    type: String,
+    isArray: true,
+  })
+  async getOutdatedContracts(): Promise<string[]> {
+    return await this.verifierService.getOutdatedContracts();
+  }
+
   @Get('/:address')
   @ApiResponse({
     status: 200,
