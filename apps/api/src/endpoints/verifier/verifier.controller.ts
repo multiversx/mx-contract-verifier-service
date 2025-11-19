@@ -1,17 +1,15 @@
-import { ContractVerifier, Verifier, VerifierCodeHashResponse, VerifierDeletion, VerifierResponse } from '@libs/common';
-import { TaskService, VerifierService } from '@libs/services';
-import { ParseAddressPipe, ParseBoolPipe, ParseIntPipe } from '@multiversx/sdk-nestjs-common';
 import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Post,
-  Query,
-} from '@nestjs/common';
+  ContractVerifier,
+  ParseScAddressPipe,
+  Verifier,
+  VerifierCodeHashResponse,
+  VerifierDeletion,
+  VerifierResponse,
+} from '@libs/common';
+import { TaskService, VerifierService } from '@libs/services';
+import { ParseBoolPipe, ParseIntPipe } from '@multiversx/sdk-nestjs-common';
+import { Body, Controller, Delete, Get, Param, Post, Query } from '@nestjs/common';
 import { ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
-
 
 @ApiTags('verifier')
 @Controller('verifier')
@@ -40,7 +38,8 @@ export class VerifierController {
   @Get('/outdated')
   @ApiResponse({
     status: 200,
-    description: 'Returns the list of contracts where bytecode has changed since last verification',
+    description:
+      'Returns the list of contracts where bytecode has changed since last verification',
     type: String,
     isArray: true,
   })
@@ -51,8 +50,7 @@ export class VerifierController {
   @Get('/:address')
   @ApiResponse({
     status: 200,
-    description:
-      'Returns the contract verifier information for the given address',
+    description: 'Returns the contract verifier information for the given address',
     type: ContractVerifier,
   })
   @ApiParam({
@@ -71,7 +69,7 @@ export class VerifierController {
     required: false,
   })
   async getVerifier(
-    @Param('address', ParseAddressPipe) address: string,
+    @Param('address', ParseScAddressPipe) address: string,
     @Query('depth', ParseIntPipe) depth: number,
     @Query('includeTestFiles', ParseBoolPipe) includeTestFiles: boolean,
   ): Promise<ContractVerifier> {
@@ -98,11 +96,9 @@ export class VerifierController {
     required: true,
   })
   async getContractCodeHash(
-    @Param('address', ParseAddressPipe) address: string,
+    @Param('address', ParseScAddressPipe) address: string,
   ): Promise<VerifierCodeHashResponse> {
-    const data = await this.verifierService.getContractVerifierCodeHash(
-      address,
-    );
+    const data = await this.verifierService.getContractVerifierCodeHash(address);
 
     return { codeHash: data.codeHash };
   }

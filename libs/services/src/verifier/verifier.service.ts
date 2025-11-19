@@ -16,7 +16,6 @@ import { CommonConfigService } from '@libs/common/config/common.config.service';
 import { ContractVerifierRepository } from '@libs/database';
 import { Address, Message, MessageComputer, UserVerifier } from '@multiversx/sdk-core';
 import { CacheService } from '@multiversx/sdk-nestjs-cache';
-import { AddressUtils } from '@multiversx/sdk-nestjs-common';
 import { ApiService } from '@multiversx/sdk-nestjs-http';
 import {
   BadRequestException,
@@ -279,12 +278,6 @@ export class VerifierService {
   public async getContractVerifierCodeHash(
     address: string,
   ): Promise<VerifierCodeHashResponse> {
-    if (!AddressUtils.isAddressValid(address)) {
-      throw new BadRequestException(
-        "Validation failed for 'address' argument. Expected a valid bech32 address.",
-      );
-    }
-
     const data = await this.getContractVerifierModel(address);
 
     if (!data) {
