@@ -4,8 +4,8 @@ import { Document } from 'mongoose';
 export type ContractVerifierDocument = ContractVerifier & Document;
 
 class ContractVerifierSource {
-  abi: any = '';
-  contract: any = '';
+  abi: string = '';
+  contract: string = '';
 }
 
 enum ContractVerifierStatus {
@@ -20,21 +20,21 @@ export class ContractVerifier {
   @Prop({ required: true, unique: true })
   address!: string;
 
-  @Prop()
-  codeHash?: string;
+  @Prop( { required: true })
+  codeHash!: string;
 
-  @Prop({ type: Object })
-  source?: ContractVerifierSource;
+  @Prop({ type: Object, required: true })
+  source!: ContractVerifierSource;
 
-  @Prop()
-  ipfsFileHash?: string;
+  @Prop( { required: true })
+  ipfsFileHash!: string;
 
-  @Prop()
-  dockerImage?: string;
+  @Prop( { required: true })
+  dockerImage!: string;
 
   @Prop({
     enum: ContractVerifierStatus,
-    default: ContractVerifierStatus.success,
+    required: true,
   })
   status!: ContractVerifierStatus;
 }

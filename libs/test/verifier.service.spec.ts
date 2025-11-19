@@ -41,6 +41,8 @@ import { DockerRunner } from '../services/src/docker/docker.runner';
 import { PinataService } from '../services/src/pinata/pinata.service';
 import { VerifierService } from "../services/src/verifier";
 import { validatePayloadMock } from './mocks/validate.payload.mock';
+import { mockAddress, mockCodeHash, pinataHash, verifiedContractMock } from './mocks/verified.contract.mock';
+import { verifiedContractInfoSourceMock } from './mocks/verified.source.mock';
 
 describe('VerifierService', () => {
     let service: VerifierService;
@@ -50,21 +52,6 @@ describe('VerifierService', () => {
     let apiService: jest.Mocked<ApiService>;
     let dockerRunner: jest.Mocked<DockerRunner>;
     let cacheService: jest.Mocked<CacheService>;
-
-    const mockAddress = 'erd1qqqqqqqqqqqqqpgqvxzjqasv3jsu5kxtk8ergnqdhuk3vfmnd8ss3hzc3q';
-    const mockCodeHash = '7f7376f37a9f809a1a9b21b60a2a9afe7c9d22ab65807324f537ab3696110a58';
-    const pinataHash = "QmR52Y13ZQbjnETjHsG6hLA7fgidyrWt1JVQDp6Ti1aD7N";
-    const verifiedContractMock = {
-            address: mockAddress,
-            codeHash: mockCodeHash,
-            status: ContractVerifierStatus.success,
-            source: {
-                abi: '',
-                contract: 'eyJzY2hlbWFWZXJzaW9uIjoiMi4wLjAiLCJtZXRhZGF0YSI6eyJjb250cmFjdE5hbWUiOiJhZGRlciIsImNvbnRyYWN0VmVyc2lvbiI6IjAuMC4wIiwiYnVpbGRNZXRhZGF0YSI6eyJ2ZXJzaW9uUnVzdCI6IjEuODYuMCIsInZlcnNpb25TY1Rvb2wiOiIwLjU3LjEiLCJ2ZXJzaW9uV2FzbU9wdCI6IjAuMTE2LjEiLCJ0YXJnZXRQbGF0Zm9ybSI6ImxpbnV4L2FtZDY0In19fQ==',
-            },
-            ipfsFileHash: pinataHash,
-            dockerImage: 'multiversx/sdk-rust-contract-builder:v10.0.0',
-        };
 
     beforeEach(async () => {
         jest.spyOn(Logger.prototype, 'log').mockImplementation(() => {});
@@ -169,19 +156,7 @@ describe('VerifierService', () => {
             status: ContractVerifierStatus.success,
             ipfsFileHash: pinataHash,
             dockerImage: 'multiversx/sdk-rust-contract-builder:v10.0.0',
-            source: {
-                "schemaVersion": "2.0.0",
-                "metadata": {
-                    "contractName": "adder",
-                    "contractVersion": "0.0.0",
-                    "buildMetadata": {
-                        "versionRust": "1.86.0",
-                        "versionScTool": "0.57.1",
-                        "versionWasmOpt": "0.116.1",
-                        "targetPlatform": "linux/amd64",
-                    },
-                },
-            },
+            source: verifiedContractInfoSourceMock,
         });
     });
 
@@ -204,19 +179,7 @@ describe('VerifierService', () => {
             status: ContractVerifierStatus.byteCodeChangedSinceLastVerification,
             ipfsFileHash: pinataHash,
             dockerImage: 'multiversx/sdk-rust-contract-builder:v10.0.0',
-            source: {
-                "schemaVersion": "2.0.0",
-                "metadata": {
-                    "contractName": "adder",
-                    "contractVersion": "0.0.0",
-                    "buildMetadata": {
-                        "versionRust": "1.86.0",
-                        "versionScTool": "0.57.1",
-                        "versionWasmOpt": "0.116.1",
-                        "targetPlatform": "linux/amd64",
-                    },
-                },
-            },
+            source: verifiedContractInfoSourceMock,
         });
     });
 
@@ -347,7 +310,10 @@ describe('VerifierService', () => {
         const result = await service.removeContractVerifierSource(requestBody);
         expect(result).toEqual({
             codeHash: '7f7376f37a9f809a1a9b21b60a2a9afe7c9d22ab65807324f537ab3696110a58',
-            source: 'eyJzY2hlbWFWZXJzaW9uIjoiMi4wLjAiLCJtZXRhZGF0YSI6eyJjb250cmFjdE5hbWUiOiJhZGRlciIsImNvbnRyYWN0VmVyc2lvbiI6IjAuMC4wIiwiYnVpbGRNZXRhZGF0YSI6eyJ2ZXJzaW9uUnVzdCI6IjEuODYuMCIsInZlcnNpb25TY1Rvb2wiOiIwLjU3LjEiLCJ2ZXJzaW9uV2FzbU9wdCI6IjAuMTE2LjEiLCJ0YXJnZXRQbGF0Zm9ybSI6ImxpbnV4L2FtZDY0In19fQ==',
+            source: {
+                abi: verifiedContractMock.source.abi,
+                contract: verifiedContractMock.source.contract,
+            },
             status: 'success',
             ipfsFileHash: 'QmR52Y13ZQbjnETjHsG6hLA7fgidyrWt1JVQDp6Ti1aD7N',
             dockerImage: 'multiversx/sdk-rust-contract-builder:v10.0.0',

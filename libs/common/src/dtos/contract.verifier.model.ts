@@ -1,12 +1,12 @@
 import { ContractVerifierStatus } from './common';
 
-export class ContractVerifierModel {
-  codeHash?: string = '';
-  source?: {
-    abi: any;
-    contract: any;
+export type ContractVerifierModel = {
+  codeHash: string;
+  source: {
+    abi: string;
+    contract: string;
   };
-  status!: ContractVerifierStatus;
-  ipfsFileHash?: string = '';
-  dockerImage?: string = '';
+  status: ContractVerifierStatus;
+  ipfsFileHash: string;
+  dockerImage: string;
 }

@@ -75,8 +75,8 @@ export class VerifierService {
     return {
       codeHash: result.codeHash,
       source: {
-        abi: result.source?.abi,
-        contract: result.source?.contract,
+        abi: result.source.abi,
+        contract: result.source.contract,
       },
       status: result.status,
       ipfsFileHash: result.ipfsFileHash,
@@ -126,12 +126,11 @@ export class VerifierService {
       returnedData.status = ContractVerifierStatus.byteCodeChangedSinceLastVerification;
     }
 
-    if (data.source) {
-      returnedData.source = {
-        abi: JSON.parse(Buffer.from(data.source.abi, 'base64').toString()),
-        contract: JSON.parse(Buffer.from(data.source.contract, 'base64').toString())
-      };
-    }
+    returnedData.source = {
+      abi: JSON.parse(Buffer.from(data.source.abi, 'base64').toString()),
+      contract: JSON.parse(Buffer.from(data.source.contract, 'base64').toString()),
+    };
+
 
     // Filter result by depth
     if (returnedData.source?.contract && dependencyDepth > -1) {
@@ -167,28 +166,6 @@ export class VerifierService {
     return returnedData;
   }
 
-  private async getVerifiedContractsOutModel(
-    fieldsToInclude?: (keyof ContractVerifierOutModel)[],
-  ): Promise<Partial<ContractVerifierOutModel>[]> {
-    const selectFields: Record<string, number> = {};
-    if (fieldsToInclude) {
-      for (const field of fieldsToInclude) {
-        selectFields[field] = 1;
-      }
-    }
-
-    const result = await this.contractVerifierRepository.findVerified(selectFields);
-
-    return result.map((entry) => ({
-      address: entry.address,
-      status: entry.status,
-      codeHash: entry.codeHash,
-      ipfsFileHash: entry.ipfsFileHash,
-      dockerImage: entry.dockerImage,
-      source: entry.source?.contract,
-    }));
-  }
-
   public async getVerifiedContracts(): Promise<string[]> {
     const data = await this.getVerifiedContractsOutModel(['address']);
     return data.map((contract) => contract.address || '');
@@ -199,15 +176,39 @@ export class VerifierService {
     return data.map((contract) => contract.address || '');
   }
 
-  private async getOutdatedContractsOutModel(
+  private selectFieldsToInclude(
     fieldsToInclude?: (keyof ContractVerifierOutModel)[],
-  ): Promise<Partial<ContractVerifierOutModel>[]> {
+  ): Record<string, number> {
     const selectFields: Record<string, number> = {};
     if (fieldsToInclude) {
       for (const field of fieldsToInclude) {
         selectFields[field] = 1;
       }
     }
+    return selectFields;
+  }
+
+  private async getVerifiedContractsOutModel(
+    fieldsToInclude?: (keyof ContractVerifierOutModel)[],
+  ): Promise<Partial<ContractVerifierOutModel>[]> {
+    const selectFields = this.selectFieldsToInclude(fieldsToInclude);
+
+    const result = await this.contractVerifierRepository.findVerified(selectFields);
+
+    return result.map((entry) => ({
+      address: entry.address,
+      status: entry.status,
+      codeHash: entry.codeHash,
+      ipfsFileHash: entry.ipfsFileHash,
+      dockerImage: entry.dockerImage,
+      source: entry.source,
+    }));
+  }
+
+  private async getOutdatedContractsOutModel(
+    fieldsToInclude?: (keyof ContractVerifierOutModel)[],
+  ): Promise<Partial<ContractVerifierOutModel>[]> {
+    const selectFields = this.selectFieldsToInclude(fieldsToInclude);
 
     const result = await this.contractVerifierRepository.findOutdated(selectFields);
 
@@ -217,7 +218,7 @@ export class VerifierService {
       codeHash: entry.codeHash,
       ipfsFileHash: entry.ipfsFileHash,
       dockerImage: entry.dockerImage,
-      source: entry.source?.contract,
+      source: entry.source,
     }));
   }
 
