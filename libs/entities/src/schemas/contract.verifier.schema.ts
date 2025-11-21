@@ -20,16 +20,16 @@ export class ContractVerifier {
   @Prop({ required: true, unique: true })
   address!: string;
 
-  @Prop( { required: true })
+  @Prop({ required: true })
   codeHash!: string;
 
   @Prop({ type: Object, required: true })
   source!: ContractVerifierSource;
 
-  @Prop( { required: true })
+  @Prop({ required: true })
   ipfsFileHash!: string;
 
-  @Prop( { required: true })
+  @Prop({ required: true })
   dockerImage!: string;
 
   @Prop({
