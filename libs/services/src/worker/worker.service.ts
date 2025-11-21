@@ -1,4 +1,6 @@
 import {
+  ErrorVerifierResponse,
+  SuccessfulVerifierResponse,
   TaskStatus,
   Verifier,
 } from '@libs/common';
@@ -21,10 +23,14 @@ export class WorkerService {
   }
 
   async workVerifier(taskId: string, validate: Verifier): Promise<void> {
-    await this.work(taskId, async () => await this.verifierService.validate(validate));
+    try {
+      await this.work(taskId, async () => await this.verifierService.validate(validate));
+    } catch (error: any) {
+      console.error(`Error in workVerifier for task ${taskId}; error: ${error.message}, stack: ${error.stack}`);
+    }
   }
 
-  private async work<T>(taskId: string, promise: () => Promise<T>): Promise<T> {
+  private async work(taskId: string, promise: () => Promise<SuccessfulVerifierResponse>): Promise<SuccessfulVerifierResponse> {
     await this.updateTask(taskId, TaskStatus.queued);
 
     return await this.lock.acquire('task', async done => {
@@ -36,13 +42,17 @@ export class WorkerService {
         await this.updateTask(taskId, TaskStatus.finished, result);
         done(undefined, result);
       } catch (error: any) {
-        await this.updateTask(taskId, TaskStatus.error, error.response?.errors);
+        await this.updateTask(taskId, TaskStatus.error, error.response);
         done(error);
       }
     });
   }
 
-  private async updateTask(taskIdentifier: string, status: TaskStatus, result?: any) {
+  private async updateTask(
+    taskIdentifier: string,
+    status: TaskStatus,
+    result?: SuccessfulVerifierResponse | ErrorVerifierResponse,
+  ): Promise<void> {
     await this.workerCallbackService.updateStatus(taskIdentifier, status, result);
   }
 }

@@ -33,7 +33,7 @@ jest.mock('fs', () => {
 
 import { CacheService } from '@multiversx/sdk-nestjs-cache';
 import { ApiService } from '@multiversx/sdk-nestjs-http';
-import { BadRequestException, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, InternalServerErrorException, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { CommonConfigService, ContractVerifierStatus } from "../common/src";
 import { ContractVerifierRepository } from '../database/src';
@@ -41,7 +41,7 @@ import { DockerRunner } from '../services/src/docker/docker.runner';
 import { PinataService } from '../services/src/pinata/pinata.service';
 import { VerifierService } from "../services/src/verifier";
 import { validatePayloadMock } from './mocks/validate.payload.mock';
-import { mockAddress, mockCodeHash, pinataHash, verifiedContractMock } from './mocks/verified.contract.mock';
+import { dockerImage, mockAddress, mockCodeHash, pinataHash, verifiedContractMock } from './mocks/verified.contract.mock';
 import { verifiedContractInfoSourceMock } from './mocks/verified.source.mock';
 
 describe('VerifierService', () => {
@@ -327,11 +327,9 @@ describe('VerifierService', () => {
         const validatePayloadMockWithoutDockerImage = JSON.parse(JSON.stringify(validatePayloadMock));
         validatePayloadMockWithoutDockerImage.payload.dockerImage = '';
 
-        const result = await service.validate(validatePayloadMockWithoutDockerImage);
-        expect(result).toEqual({
-            status: "error",
-            message: "Invalid docker image",
-        });
+        await expect(service.validate(validatePayloadMockWithoutDockerImage)).rejects.toThrow(
+            new BadRequestException('Invalid docker image')
+        );
     });
 
     it('should throw docker execution error', async () => {
@@ -339,11 +337,7 @@ describe('VerifierService', () => {
 
         jest.spyOn((service as any).dockerRunner, 'exec').mockRejectedValueOnce(new Error('Docker execution failed'));
 
-        const result = await service.validate(validatePayloadMock);
-        expect(result).toEqual({
-            status: "error",
-            message: "Contract build error",
-        });
+        await expect(service.validate(validatePayloadMock)).rejects.toThrow(new InternalServerErrorException('Contract build failed'));
     });
 
     it('should throw source code hash does not match', async () => {
@@ -357,11 +351,9 @@ describe('VerifierService', () => {
             },
         });
 
-        const result = await service.validate(validatePayloadMock);
-        expect(result).toEqual({
-            status: "error",
-            message: "Source code hashes do not match",
-        });
+        await expect(service.validate(validatePayloadMock)).rejects.toThrow(
+            new BadRequestException('Source code hash does not match deployed contract')
+        );
     });
 
     it('should throw pinata error', async () => {
@@ -379,11 +371,7 @@ describe('VerifierService', () => {
             return Promise.resolve(undefined);
         });
 
-        const result = await service.validate(validatePayloadMock);
-        expect(result).toEqual({
-            status: "error",
-            message: "Could not upload to IPFS",
-        });
+        await expect(service.validate(validatePayloadMock)).rejects.toThrow(new InternalServerErrorException('Failed to upload contract to IPFS'));
     });
 
     it('should validate contract', async () => {
@@ -407,7 +395,10 @@ describe('VerifierService', () => {
 
         const result = await service.validate(validatePayloadMock);
         expect(result).toEqual({
-            status: "success",
+            address: mockAddress,
+            codeHash: mockCodeHash,
+            ipfsFileHash: pinataHash,
+            dockerImage: dockerImage,
         });
     });
 });

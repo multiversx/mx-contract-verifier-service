@@ -1,10 +1,25 @@
-import { ContractVerifierStatus } from './common';
+export class SuccessfulVerifierResponse {
+  address: string;
+  codeHash: string;
+  ipfsFileHash: string;
+  dockerImage: string;
 
-export class VerifierResponse {
-  constructor(partial?: Partial<VerifierResponse>) {
-    Object.assign(this, partial);
+  constructor(options: {address: string; codeHash: string; ipfsFileHash: string; dockerImage: string}) {
+    this.address = options.address;
+    this.codeHash = options.codeHash;
+    this.ipfsFileHash = options.ipfsFileHash;
+    this.dockerImage = options.dockerImage;
   }
+}
 
-  status!: ContractVerifierStatus;
-  message?: string = '';
+export class ErrorVerifierResponse {
+  message: string;
+  error: string;
+  statusCode: number;
+
+  constructor(options: {message: string; error: string; statusCode: number}) {
+    this.message = options.message;
+    this.error = options.error;
+    this.statusCode = options.statusCode;
+  }
 }

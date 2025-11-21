@@ -4,7 +4,6 @@ import {
   Verifier,
   VerifierCodeHashResponse,
   VerifierDeletion,
-  VerifierResponse,
 } from '@libs/common';
 import { TaskService, VerifierService } from '@libs/services';
 import { ParseBoolPipe, ParseIntPipe } from '@multiversx/sdk-nestjs-common';
@@ -20,7 +19,7 @@ export class VerifierController {
   ) {}
 
   @Post()
-  async verify(@Body() validateBody: Verifier): Promise<VerifierResponse> {
+  async verify(@Body() validateBody: Verifier): Promise<{taskId: string}> {
     return await this.taskService.runVerifier(validateBody);
   }
 
