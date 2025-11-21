@@ -31,6 +31,7 @@ jest.mock('fs', () => {
     };
 });
 
+import { CacheService } from '@multiversx/sdk-nestjs-cache';
 import { ApiService } from '@multiversx/sdk-nestjs-http';
 import { BadRequestException, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -48,6 +49,7 @@ describe('VerifierService', () => {
     let pinataService: jest.Mocked<PinataService>;
     let apiService: jest.Mocked<ApiService>;
     let dockerRunner: jest.Mocked<DockerRunner>;
+    let cacheService: jest.Mocked<CacheService>;
 
     const mockAddress = 'erd1qqqqqqqqqqqqqpgqvxzjqasv3jsu5kxtk8ergnqdhuk3vfmnd8ss3hzc3q';
     const mockCodeHash = '7f7376f37a9f809a1a9b21b60a2a9afe7c9d22ab65807324f537ab3696110a58';
@@ -83,6 +85,7 @@ describe('VerifierService', () => {
             save: jest.fn(),
             findOne: jest.fn(),
             findVerified: jest.fn(),
+            findOutdated: jest.fn(),
             delete: jest.fn(),
         } as any;
 
@@ -96,6 +99,10 @@ describe('VerifierService', () => {
 
         dockerRunner = {
             exec: jest.fn(),
+        } as any;
+
+        cacheService = {
+            getOrSet: jest.fn(),
         } as any;
 
         const module: TestingModule = await Test.createTestingModule({
@@ -121,6 +128,10 @@ describe('VerifierService', () => {
                     provide: DockerRunner,
                     useValue: dockerRunner,
                 },
+                {
+                    provide: CacheService,
+                    useValue: cacheService,
+                },
             ],
         }).compile();
 
@@ -141,6 +152,9 @@ describe('VerifierService', () => {
 
     it('should get contract verifier info', async () => {
         contractVerifierRepository.findOne.mockResolvedValue(verifiedContractMock);
+        cacheService.getOrSet.mockImplementation((_key, callback) => {
+            return Promise.resolve(callback());
+        });
 
         apiService.get.mockResolvedValue({
             data: {
@@ -171,10 +185,56 @@ describe('VerifierService', () => {
         });
     });
 
+    it('should return changed status for contract verifier info', async () => {
+        contractVerifierRepository.findOne.mockResolvedValue(verifiedContractMock);
+        cacheService.getOrSet.mockImplementation((_key, callback) => {
+            return Promise.resolve(callback());
+        });
+
+        apiService.get.mockResolvedValue({
+            data: {
+                codeHash: Buffer.from('dc18de0c20d3c34b3f07e70f9f68b4db49063acad5632d774f3ab259f56fd11d', 'hex').toString('base64'),
+            },
+        });
+
+        const result = await service.getContractVerifier(mockAddress);
+
+        expect(result).toEqual({
+            codeHash: mockCodeHash,
+            status: ContractVerifierStatus.byteCodeChangedSinceLastVerification,
+            ipfsFileHash: pinataHash,
+            dockerImage: 'multiversx/sdk-rust-contract-builder:v10.0.0',
+            source: {
+                "schemaVersion": "2.0.0",
+                "metadata": {
+                    "contractName": "adder",
+                    "contractVersion": "0.0.0",
+                    "buildMetadata": {
+                        "versionRust": "1.86.0",
+                        "versionScTool": "0.57.1",
+                        "versionWasmOpt": "0.116.1",
+                        "targetPlatform": "linux/amd64",
+                    },
+                },
+            },
+        });
+    });
+
     it('should get verified contracts', async () => {
         contractVerifierRepository.findVerified.mockResolvedValue([verifiedContractMock]);
 
         const result = await service.getVerifiedContracts();
+        expect(result).toEqual([mockAddress]);
+    });
+
+    it('should get outdated contracts', async () => {
+        const outdatedContractMock = {
+            ...verifiedContractMock,
+            status: ContractVerifierStatus.byteCodeChangedSinceLastVerification,
+        };
+        contractVerifierRepository.findOutdated.mockResolvedValue([outdatedContractMock]);
+
+        const result = await service.getOutdatedContracts();
         expect(result).toEqual([mockAddress]);
     });
 
@@ -188,6 +248,9 @@ describe('VerifierService', () => {
 
     it('should get codeHash of the verified contract', async () => {
         contractVerifierRepository.findOne.mockResolvedValue(verifiedContractMock);
+        cacheService.getOrSet.mockImplementation((_key, callback) => {
+            return Promise.resolve(callback());
+        });
 
         const result = await service.getContractVerifierCodeHash(mockAddress);
         expect(result).toEqual({ codeHash: mockCodeHash });
@@ -259,6 +322,10 @@ describe('VerifierService', () => {
 
     it('should delete contract verifier', async () => {
         const spy = jest.spyOn(service as any, 'checkPayloadSignature').mockImplementation(() => true);
+
+        cacheService.getOrSet.mockImplementation((_key, callback) => {
+            return Promise.resolve(callback());
+        });
 
         contractVerifierRepository.findOne.mockResolvedValue(verifiedContractMock);
         contractVerifierRepository.delete.mockResolvedValue(verifiedContractMock);
