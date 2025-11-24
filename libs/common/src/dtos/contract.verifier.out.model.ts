@@ -1,5 +1,5 @@
 import { ContractVerifierModel } from './contract.verifier.model';
 
-export class ContractVerifierOutModel extends ContractVerifierModel {
-  address: string = '';
+export type ContractVerifierOutModel = ContractVerifierModel & {
+  address: string;
 }
