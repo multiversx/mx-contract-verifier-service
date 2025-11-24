@@ -13,15 +13,13 @@ import {
   Inject,
   Injectable,
   InternalServerErrorException,
-  Logger
+  Logger,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { randomUUID } from 'crypto';
 
 @Injectable()
 export class TaskService {
-  // private MAX_NUMBER_OF_ITERATIONS = 10;
-  // private POLLING_INTERVAL = 500;
   private readonly logger: Logger;
 
   constructor(
@@ -63,33 +61,6 @@ export class TaskService {
   private async run(type: string, value: any): Promise<any> {
     const taskId = await this.runWork(type, value);
     return { taskId };
-
-    // let iterations = 0;
-
-    // return new Promise((resolve, reject) => {
-    //   const interval = setInterval(async () => {
-    //     iterations++;
-    //     const task = await this.cachingService.getRemote<Task>(
-    //       `task:${taskId}`,
-    //     );
-    //     if (task) {
-    //       if (task.status === TaskStatus.finished) {
-    //         clearInterval(interval);
-    //         resolve(task.result);
-    //       } else if (task.status === TaskStatus.error) {
-    //         clearInterval(interval);
-    //         if (task.result instanceof Array) {
-    //           reject(new BadRequestException({ errors: task.result }));
-    //         } else {
-    //           reject(new BadRequestException());
-    //         }
-    //       } else if (iterations >= this.MAX_NUMBER_OF_ITERATIONS) {
-    //         clearInterval(interval);
-    //         reject(new RequestTimeoutException({ taskId }));
-    //       }
-    //     }
-    //   }, this.POLLING_INTERVAL);
-    // });
   }
 
   private async runWork(type: string, value: any): Promise<string> {

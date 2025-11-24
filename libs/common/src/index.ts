@@ -6,4 +6,5 @@ export * from './health-check';
 export * from './metrics';
 export * from './pipes';
 export * from './pubsub';
+export * from './queue-worker';
 export * from './utils';

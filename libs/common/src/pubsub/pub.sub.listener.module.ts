@@ -1,24 +1,31 @@
 import { LoggingModule } from '@multiversx/sdk-nestjs-common';
 import { DynamicModule, Module } from '@nestjs/common';
-import { AppModule } from 'apps/queue-worker/src/app.module';
 import { CommonConfigModule } from '../config';
+import { QueueWorkerModule } from '../queue-worker/queue.worker.module';
 import { DynamicModuleUtils } from '../utils';
 import { PubSubListenerController } from './pub.sub.listener.controller';
 
+export interface PubSubListenerModuleOptions {
+  enableConsumer?: boolean;
+}
+
 @Module({})
 export class PubSubListenerModule {
-  static forRoot(): DynamicModule {
+  static forRoot(options: PubSubListenerModuleOptions = {}): DynamicModule {
+    // Only register controller if enableConsumer is true
+    const controllers = options.enableConsumer
+      ? [PubSubListenerController]
+      : [];
+
     return {
       module: PubSubListenerModule,
       imports: [
         LoggingModule,
         CommonConfigModule,
         DynamicModuleUtils.getCachingModule(),
-        AppModule,
+        QueueWorkerModule,
       ],
-      controllers: [
-        PubSubListenerController,
-      ],
+      controllers,
       providers: [
         DynamicModuleUtils.getPubSubService(),
       ],

@@ -7,12 +7,12 @@ dotenv.config({
   path: resolve(process.cwd(), envPath),
 });
 
-import 'module-alias/register';
-import { NestFactory } from '@nestjs/core';
 import { CommonConfigService, PubSubListenerModule } from '@libs/common';
-import { AppModule } from './app.module';
+import { NestFactory } from '@nestjs/core';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
+import 'module-alias/register';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
+import { AppModule } from './app.module';
 import { AppConfigService } from './config/app-config.service';
 
 async function bootstrap() {
@@ -23,7 +23,7 @@ async function bootstrap() {
   await app.listen(appConfigService.config.port);
 
   const pubSubApp = await NestFactory.createMicroservice<MicroserviceOptions>(
-    PubSubListenerModule.forRoot(),
+    PubSubListenerModule.forRoot({enableConsumer: true}),
     {
       transport: Transport.REDIS,
       options: {
