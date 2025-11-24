@@ -7,10 +7,6 @@ export class DockerRunner {
   private logger = new Logger('Docker');
 
   public exec(options: DockerRunnerOptionsInterface): Promise<string> {
-    this.logger.log(
-      `Started docker process with options: ${JSON.stringify(options)}`,
-    );
-
     const mountArgs = [];
 
     if (options.inputVolumeMap) {

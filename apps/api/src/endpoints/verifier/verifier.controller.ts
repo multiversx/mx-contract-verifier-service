@@ -1,6 +1,7 @@
 import {
   ContractVerifier,
   ParseScAddressPipe,
+  TaskIdResponse,
   Verifier,
   VerifierCodeHashResponse,
   VerifierDeletion,
@@ -19,7 +20,12 @@ export class VerifierController {
   ) {}
 
   @Post()
-  async verify(@Body() validateBody: Verifier): Promise<{taskId: string}> {
+  @ApiResponse({
+    status: 200,
+    description: 'Queues a contract verification task and returns the task ID',
+    type: TaskIdResponse,
+  })
+  async verify(@Body() validateBody: Verifier): Promise<TaskIdResponse> {
     return await this.taskService.runVerifier(validateBody);
   }
 

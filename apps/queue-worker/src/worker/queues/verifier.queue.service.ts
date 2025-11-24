@@ -15,9 +15,9 @@ export class VerifierQueueService {
   }
 
   @Process({ name: 'validate', concurrency: 1 })
-  onVerifyRequest(job: Job<any>) {
+  async onVerifyRequest(job: Job<any>) {
     this.logger.log({ type: 'consumer', jobId: job.id, identifier: job.data.data.validate.payload.contract, attemptsMade: job.attemptsMade });
-    return this.worker.workVerifier(job.data.taskId, job.data.data.validate);
+    return await this.worker.workVerifier(job.data.taskId, job.data.data.validate);
   }
 
   @OnQueueError()
