@@ -152,6 +152,7 @@ describe('VerifierService', () => {
         const result = await service.getContractVerifier(mockAddress);
 
         expect(result).toEqual({
+            address: mockAddress,
             codeHash: mockCodeHash,
             status: ContractVerifierStatus.success,
             ipfsFileHash: pinataHash,
@@ -175,6 +176,7 @@ describe('VerifierService', () => {
         const result = await service.getContractVerifier(mockAddress);
 
         expect(result).toEqual({
+            address: mockAddress,
             codeHash: mockCodeHash,
             status: ContractVerifierStatus.byteCodeChangedSinceLastVerification,
             ipfsFileHash: pinataHash,
@@ -309,6 +311,7 @@ describe('VerifierService', () => {
 
         const result = await service.removeContractVerifierSource(requestBody);
         expect(result).toEqual({
+            address: mockAddress,
             codeHash: '7f7376f37a9f809a1a9b21b60a2a9afe7c9d22ab65807324f537ab3696110a58',
             source: {
                 abi: verifiedContractMock.source.abi,

@@ -5,6 +5,7 @@ import {
   Verifier,
   VerifierCodeHashResponse,
   VerifierDeletion,
+  VerifierDeletionResponse,
 } from '@libs/common';
 import { TaskService, VerifierService } from '@libs/services';
 import { ParseBoolPipe, ParseIntPipe } from '@multiversx/sdk-nestjs-common';
@@ -58,6 +59,10 @@ export class VerifierController {
     description: 'Returns the contract verifier information for the given address',
     type: ContractVerifier,
   })
+  @ApiResponse({
+    status: 404,
+    description: 'Verified contract not found for the given address',
+  })
   @ApiParam({
     name: 'address',
     description: 'The bech32 address of the contract',
@@ -109,7 +114,15 @@ export class VerifierController {
   }
 
   @Delete()
-  async deleteVerifier(@Body() argument: VerifierDeletion): Promise<void> {
-    return await this.verifierService.removeContractVerifierSource(argument);
+  @ApiResponse({
+  status: 200,
+  description: 'Contract verifier successfully deleted',
+  type: VerifierDeletionResponse,
+})
+  async deleteVerifier(@Body() argument: VerifierDeletion): Promise<VerifierDeletionResponse> {
+    const response = await this.verifierService.removeContractVerifierSource(argument);
+    return new VerifierDeletionResponse({
+      message: `Verified contract for address ${response.address} successfully deleted.`,
+    });
   }
 }

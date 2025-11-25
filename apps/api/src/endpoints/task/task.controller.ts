@@ -16,6 +16,10 @@ export class TaskController {
     description: 'Returns the task information',
     type: Task,
   })
+  @ApiResponse({
+    status: 404,
+    description: 'Task not found for the given id',
+  })
   @ApiParam({ name: 'id', description: 'The task identifier', required: true })
   async getTask(
     @Param('id') id: string,
