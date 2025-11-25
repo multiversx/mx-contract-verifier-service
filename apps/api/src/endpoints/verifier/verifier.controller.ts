@@ -6,6 +6,7 @@ import {
   VerifierCodeHashResponse,
   VerifierDeletion,
   VerifierDeletionResponse,
+  VerifierFromExisting,
 } from '@libs/common';
 import { TaskService, VerifierService } from '@libs/services';
 import { ParseBoolPipe, ParseIntPipe } from '@multiversx/sdk-nestjs-common';
@@ -28,6 +29,16 @@ export class VerifierController {
   })
   async verify(@Body() validateBody: Verifier): Promise<TaskIdResponse> {
     return await this.taskService.runVerifier(validateBody);
+  }
+
+  @Post('/from-existing')
+  @ApiResponse({
+    status: 200,
+    description: 'Queues a contract verification task from an existing verified contract and returns the task ID',
+    type: TaskIdResponse,
+  })
+  async verifyFromExisting(@Body() validateBody: VerifierFromExisting): Promise<TaskIdResponse> {
+    return await this.taskService.runVerifierFromExisting(validateBody);
   }
 
   @Get()
@@ -118,7 +129,7 @@ export class VerifierController {
   status: 200,
   description: 'Contract verifier successfully deleted',
   type: VerifierDeletionResponse,
-})
+  })
   async deleteVerifier(@Body() argument: VerifierDeletion): Promise<VerifierDeletionResponse> {
     const response = await this.verifierService.removeContractVerifierSource(argument);
     return new VerifierDeletionResponse({

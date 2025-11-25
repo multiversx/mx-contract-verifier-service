@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsNotEmpty, IsString, ValidateNested } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, ValidateNested } from 'class-validator';
 import { VerifierPayload } from './verifier.payload';
 
 export class Verifier {
@@ -8,12 +8,12 @@ export class Verifier {
     Object.assign(this, partial);
   }
 
-  @ApiProperty({ description: 'Payload signature', type: String })
+  @ApiProperty({ description: 'Payload signature (no longer required)', type: String, required: false })
   @IsString()
-  @IsNotEmpty()
-  signature: string = '';
+  @IsOptional()
+  signature?: string;
 
-  @ApiProperty({ description: 'Payload', type: VerifierPayload })
+  @ApiProperty({ description: 'Payload', type: VerifierPayload, required: true })
   @ValidateNested()
   @Type(() => VerifierPayload)
   @IsNotEmpty()

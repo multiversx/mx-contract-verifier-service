@@ -9,6 +9,7 @@ import {
   VerifierCodeHashResponse,
   VerifierDeletion,
   VerifierDeletionPayload,
+  VerifierFromExisting,
   VerifierPayload,
 } from '@libs/common';
 import { CommonConfigService } from '@libs/common/config/common.config.service';
@@ -472,6 +473,54 @@ export class VerifierService {
       temporaryFile.removeCallback();
       temporaryFolder.removeCallback();
     }
+  }
+
+  async validateFromExisting(validateFromExisting: VerifierFromExisting): Promise<SuccessfulVerifierResponse> {
+    this.logger.log(
+      `Verifier from existing process started for contract ${validateFromExisting.contract}`,
+    );
+
+    const verfiedContract = await this.getContractVerifierModel(validateFromExisting.existingVerifiedContract);
+    if (!verfiedContract) {
+      this.logger.log(`No verified contract found for address ${validateFromExisting.existingVerifiedContract}`);
+      throw new NotFoundException(`Verified contract not found for address: ${validateFromExisting.existingVerifiedContract}`);
+    }
+
+    const verifiedContractApiData = await this.getContractDataFromApi(validateFromExisting.existingVerifiedContract);
+    const verifiedRemoteCodeHash = Buffer.from(verifiedContractApiData?.codeHash, 'base64').toString('hex');
+
+    if (verfiedContract.codeHash !== verifiedRemoteCodeHash) {
+      this.logger.log(`Bytecode changed for existing verified contract ${validateFromExisting.existingVerifiedContract}`);
+      throw new BadRequestException('Bytecode changed for existing verified contract');
+    }
+
+    const contractApiData = await this.getContractDataFromApi(validateFromExisting.contract);
+    const contractRemoteCodeHash = Buffer.from(contractApiData?.codeHash, 'base64').toString('hex');
+
+    if (verfiedContract.codeHash !== contractRemoteCodeHash) {
+      this.logger.log(
+        `Source code hashes do not match - existing verified contract: ${verfiedContract.codeHash} - target contract: ${contractRemoteCodeHash}`,
+      );
+      throw new BadRequestException('Source code hash does not match verified contract');
+    }
+
+    await this.contractVerifierRepository.save(validateFromExisting.contract, {
+      source: verfiedContract.source,
+      codeHash: verfiedContract.codeHash,
+      ipfsFileHash: verfiedContract.ipfsFileHash,
+      status: ContractVerifierStatus.success,
+      dockerImage: verfiedContract.dockerImage,
+    });
+    this.logger.log(
+      `Contract verifier from existing saved to database - contract: ${validateFromExisting.contract} - from existing verified contract: ${validateFromExisting.existingVerifiedContract}`,
+    );
+
+    return new SuccessfulVerifierResponse({
+      address: validateFromExisting.contract,
+      codeHash: verfiedContract.codeHash,
+      ipfsFileHash: verfiedContract.ipfsFileHash,
+      dockerImage: verfiedContract.dockerImage,
+    });
   }
 
   private async getContractDataFromApi(address: string, shouldThrowError: boolean = true): Promise<any> {

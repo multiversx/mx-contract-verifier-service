@@ -14,17 +14,39 @@ export class PubSubListenerController {
 
   @EventPattern('validate')
   async validate({
-      taskId,
-      type,
-      value,
-      environment,
-    }: {
-      taskId: string;
-      type: string;
-      value: any;
-      environment: "devnet" | "testnet" | "mainnet";
-    }) {
-      this.logger.log('Received validate event', { taskId, type, contract: value.validate.payload.contract, environment });
-      await this.workerService.addJobIntoQueue(type, taskId, value);
-    }
+    taskId,
+    type,
+    value,
+    environment,
+  }: {
+    taskId: string;
+    type: string;
+    value: any;
+    environment: "devnet" | "testnet" | "mainnet";
+  }) {
+    this.logger.log('Received validate event', { taskId, type, contract: value.validate.payload.contract, environment });
+    await this.workerService.addVerifierJobIntoQueue(type, taskId, value);
+  }
+
+  @EventPattern('validateFromExisting')
+  async validateFromExisting({
+    taskId,
+    type,
+    value,
+    environment,
+  }: {
+    taskId: string;
+    type: string;
+    value: any;
+    environment: "devnet" | "testnet" | "mainnet";
+  }) {
+    this.logger.log(
+      'Received validateFromExisting event', {
+        taskId,
+        type,
+        contract: value.validateFromExisting.contract,
+        environment }
+    );
+    await this.workerService.addVerifierFromExistingJobIntoQueue(type, taskId, value);
+  }
 }

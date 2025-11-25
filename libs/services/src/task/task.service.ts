@@ -4,6 +4,7 @@ import {
   TaskIdResponse,
   TaskStatus,
   Verifier,
+  VerifierFromExisting,
 } from '@libs/common';
 import { CacheService } from '@multiversx/sdk-nestjs-cache';
 import { Constants } from '@multiversx/sdk-nestjs-common';
@@ -40,22 +41,19 @@ export class TaskService {
       `Received verifier request for contract ${validate.payload.contract}`,
     );
 
-    let response: any;
-    try {
-      response = await this.apiService.get(
-        `${this.configService.config.urls.api}/accounts/${validate.payload.contract}`,
-      );
-    } catch (error: any) {
-      this.logger.error(`Error fetching account data for contract ${validate.payload.contract}, error: ${error.message}`);
-      throw new InternalServerErrorException(`Failed to fetch account data for contract ${validate.payload.contract}`);
-    }
-
-    const ownerAddress = response.data?.ownerAddress;
-    if (!ownerAddress) {
-      throw new BadRequestException('Could not determine owner address for the contract.');
-    }
-
+    await this.ensureContractExists(validate.payload.contract);
     return await this.run('validate', { validate });
+  }
+
+  async runVerifierFromExisting(validateFromExisting: VerifierFromExisting): Promise<TaskIdResponse> {
+    this.logger.log(
+      `Received verifier request for contract ${validateFromExisting.contract} from existing verified contract ${validateFromExisting.existingVerifiedContract}`,
+    );
+
+    await this.ensureContractExists(validateFromExisting.contract);
+    await this.ensureContractExists(validateFromExisting.existingVerifiedContract);
+
+    return await this.run('validateFromExisting', { validateFromExisting });
   }
 
   private async run(type: string, value: any): Promise<any> {
@@ -77,5 +75,23 @@ export class TaskService {
       Constants.oneHour(),
     );
     return taskId;
+  }
+
+  /** Ensure the contract is deployed by fetching the owner. */
+  private async ensureContractExists(address: string): Promise<void> {
+    let response: any;
+    try {
+      response = await this.apiService.get(
+        `${this.configService.config.urls.api}/accounts/${address}`,
+      );
+    } catch (error: any) {
+      this.logger.error(`Error fetching account data for contract ${address}, error: ${error.message}`);
+      throw new InternalServerErrorException(`Failed to fetch account data for contract ${address}`);
+    }
+
+    const ownerAddress = response.data?.ownerAddress;
+    if (!ownerAddress) {
+      throw new BadRequestException('Could not determine owner address for the contract.');
+    }
   }
 }
