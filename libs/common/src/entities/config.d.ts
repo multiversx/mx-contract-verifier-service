@@ -25,9 +25,6 @@ export interface Config {
       urls: {
         api: string;
       };
-      queues: {
-        api: string;
-      };
       database: {
         host: string;
         port: number;

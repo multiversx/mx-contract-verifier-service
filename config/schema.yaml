@@ -19,8 +19,6 @@ libs:
       enum: [devnet, testnet, mainnet]
     urls:
       api: string
-    queues:
-      api: string
     database:
       host: string
       port: integer

@@ -56,14 +56,14 @@ export class TaskService {
     return await this.run('validateFromExisting', { validateFromExisting });
   }
 
-  private async run(type: string, value: any): Promise<any> {
+  private async run(type: string, value: any): Promise<TaskIdResponse> {
     const taskId = await this.runWork(type, value);
     return { taskId };
   }
 
   private async runWork(type: string, value: any): Promise<string> {
     const taskId = randomUUID();
-    this.clientProxy.emit(this.configService.config.queues.api, {
+    this.clientProxy.emit(type, {
       taskId,
       type,
       value,
