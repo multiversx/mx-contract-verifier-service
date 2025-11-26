@@ -1,8 +1,9 @@
 import { CacheService } from '@multiversx/sdk-nestjs-cache';
 import { Constants } from '@multiversx/sdk-nestjs-common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { TaskStatus } from '../common/src/dtos';
+import { ErrorVerifierResponse, SuccessfulVerifierResponse, TaskStatus } from '../common/src/dtos';
 import { WorkerCallbackService } from '../services/src/worker/worker.callback.service';
+import { dockerImage, mockAddress, mockCodeHash, pinataHash } from './mocks/verified.contract.mock';
 
 describe('WorkerCallbackService', () => {
   let service: WorkerCallbackService;
@@ -32,9 +33,9 @@ describe('WorkerCallbackService', () => {
       const taskId = 'test-task-123';
       const status = TaskStatus.started;
 
-      await expect(service.updateStatus(taskId, status))
-        .rejects
-        .toThrow(`Could not identify task with identifier '${taskId}'.`);
+      await expect(service.updateStatus(taskId, status)).rejects.toThrow(
+        `Could not identify task with identifier '${taskId}'.`,
+      );
     });
 
     it('should update task status in cache', async () => {
@@ -65,7 +66,12 @@ describe('WorkerCallbackService', () => {
 
     it('should handle task status transition from started to finished', async () => {
       const taskId = 'test-task-123';
-      const result = { success: true };
+      const result = new SuccessfulVerifierResponse({
+        address: mockAddress,
+        codeHash: mockCodeHash,
+        ipfsFileHash: pinataHash,
+        dockerImage: dockerImage,
+       });
 
       jest.useFakeTimers();
       jest.setSystemTime(new Date('2025-11-05T15:26:11.967Z'));
@@ -85,7 +91,7 @@ describe('WorkerCallbackService', () => {
           finished: new Date('2025-11-05T15:26:11.967Z'),
           result,
         },
-        Constants.oneHour()
+        Constants.oneHour(),
       );
 
       jest.useRealTimers();
@@ -93,7 +99,11 @@ describe('WorkerCallbackService', () => {
 
     it('should handle task status transition to error with error details', async () => {
       const taskId = 'test-task-123';
-      const errorDetails = { status: 'error', message: 'Verification failed' };
+      const errorDetails = new ErrorVerifierResponse({
+        message: 'Verification failed',
+        error: 'BadRequestError',
+        statusCode: 400,
+      });
 
       jest.useFakeTimers();
       jest.setSystemTime(new Date('2025-11-05T15:26:11.967Z'));
@@ -113,7 +123,7 @@ describe('WorkerCallbackService', () => {
           finished: new Date('2025-11-05T15:26:11.967Z'),
           result: errorDetails,
         },
-        Constants.oneHour()
+        Constants.oneHour(),
       );
 
       jest.useRealTimers();

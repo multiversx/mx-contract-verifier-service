@@ -5,18 +5,17 @@ import {
   ContractVerifierOutModel,
   ContractVerifierSource,
   ContractVerifierStatus,
+  SuccessfulVerifierResponse,
   Verifier,
   VerifierCodeHashResponse,
   VerifierDeletion,
   VerifierDeletionPayload,
   VerifierPayload,
-  VerifierResponse,
 } from '@libs/common';
 import { CommonConfigService } from '@libs/common/config/common.config.service';
 import { ContractVerifierRepository } from '@libs/database';
 import { Address, Message, MessageComputer, UserVerifier } from '@multiversx/sdk-core';
 import { CacheService } from '@multiversx/sdk-nestjs-cache';
-import { AddressUtils } from '@multiversx/sdk-nestjs-common';
 import { ApiService } from '@multiversx/sdk-nestjs-http';
 import {
   BadRequestException,
@@ -279,12 +278,6 @@ export class VerifierService {
   public async getContractVerifierCodeHash(
     address: string,
   ): Promise<VerifierCodeHashResponse> {
-    if (!AddressUtils.isAddressValid(address)) {
-      throw new BadRequestException(
-        "Validation failed for 'address' argument. Expected a valid bech32 address.",
-      );
-    }
-
     const data = await this.getContractVerifierModel(address);
 
     if (!data) {
@@ -378,7 +371,7 @@ export class VerifierService {
     });
   }
 
-  public async validate(validateBody: Verifier): Promise<VerifierResponse> {
+  public async validate(validateBody: Verifier): Promise<SuccessfulVerifierResponse> {
     this.logger.log(
       `Verifier process started for contract ${validateBody.payload.contract}`,
     );
@@ -397,10 +390,7 @@ export class VerifierService {
       !dockerImage ||
       dockerImage.split(':')[0] !== 'multiversx/sdk-rust-contract-builder'
     ) {
-      return {
-        status: ContractVerifierStatus.error,
-        message: 'Invalid docker image',
-      };
+      throw new BadRequestException('Invalid docker image');
     }
 
     const temporaryFile = tmp.fileSync({
@@ -437,10 +427,7 @@ export class VerifierService {
         });
       } catch (e) {
         this.logger.log(`Contract build error ${e}`, e);
-        return {
-          status: ContractVerifierStatus.error,
-          message: 'Contract build error',
-        };
+        throw new InternalServerErrorException('Contract build failed');
       }
 
       this.logger.log(`Docker build finished without errors - ${contractName}`);
@@ -485,10 +472,7 @@ export class VerifierService {
         this.logger.log(
           `Source code hashes do not match - ${codeHash.toString()} - ${hexRemoteCodeHash}`,
         );
-        return {
-          status: ContractVerifierStatus.error,
-          message: 'Source code hashes do not match',
-        };
+        throw new BadRequestException('Source code hash does not match deployed contract');
       }
 
       const source = {
@@ -502,10 +486,7 @@ export class VerifierService {
 
       if (!pinataData) {
         this.logger.log('Could not upload to IPFS');
-        return {
-          status: ContractVerifierStatus.error,
-          message: 'Could not upload to IPFS',
-        };
+        throw new InternalServerErrorException('Failed to upload contract to IPFS');
       }
 
       const code = new ContractVerifierSource();
@@ -523,10 +504,12 @@ export class VerifierService {
         `Contract verifier saved to database - contract: ${contractAddress} - pinata: ${pinataData.hash} - dockerImage: ${dockerImage}`,
       );
 
-      this.logger.log(ContractVerifierStatus.success);
-      return {
-        status: ContractVerifierStatus.success,
-      };
+      return new SuccessfulVerifierResponse({
+        address: contractAddress,
+        codeHash: codeHash.toString(),
+        ipfsFileHash: pinataData.hash,
+        dockerImage: dockerImage,
+      });
     } finally {
       temporaryFile.removeCallback();
       temporaryFolder.removeCallback();

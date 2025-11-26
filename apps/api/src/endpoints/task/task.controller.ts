@@ -22,7 +22,7 @@ export class TaskController {
   ): Promise<Task> {
     const task = await this.taskService.getTask(id);
     if (!task) {
-      throw new NotFoundException();
+      throw new NotFoundException(`Task with id '${id}' not found.`);
     }
 
     return task;

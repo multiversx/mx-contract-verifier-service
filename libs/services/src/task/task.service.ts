@@ -3,7 +3,6 @@ import {
   Task,
   TaskStatus,
   Verifier,
-  VerifierResponse,
 } from '@libs/common';
 import { CacheService } from '@multiversx/sdk-nestjs-cache';
 import { Constants } from '@multiversx/sdk-nestjs-common';
@@ -38,7 +37,7 @@ export class TaskService {
     return await this.cachingService.getRemote<Task>(`task:${id}`);
   }
 
-  async runVerifier(validate: Verifier): Promise<VerifierResponse> {
+  async runVerifier(validate: Verifier): Promise<{ taskId: string }> {
     this.logger.log(
       `Received verifier request for contract ${validate.payload.contract}`,
     );
