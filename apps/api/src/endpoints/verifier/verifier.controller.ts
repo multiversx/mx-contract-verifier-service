@@ -27,6 +27,10 @@ export class VerifierController {
     description: 'Queues a contract verification task and returns the task ID',
     type: TaskIdResponse,
   })
+  @ApiResponse({
+    status: 404,
+    description: 'Contract to be verified does not exist',
+  })
   async verify(@Body() validateBody: Verifier): Promise<TaskIdResponse> {
     return await this.taskService.runVerifier(validateBody);
   }
@@ -36,6 +40,10 @@ export class VerifierController {
     status: 200,
     description: 'Queues a contract verification task from an existing verified contract and returns the task ID',
     type: TaskIdResponse,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Could not find the contract to verify or the existing verified contract',
   })
   async verifyFromExisting(@Body() validateBody: VerifierFromExisting): Promise<TaskIdResponse> {
     return await this.taskService.runVerifierFromExisting(validateBody);
@@ -119,16 +127,22 @@ export class VerifierController {
   async getContractCodeHash(
     @Param('address', ParseScAddressPipe) address: string,
   ): Promise<VerifierCodeHashResponse> {
-    const data = await this.verifierService.getContractVerifierCodeHash(address);
-
-    return { codeHash: data.codeHash };
+    return await this.verifierService.getContractVerifierCodeHash(address);
   }
 
   @Delete()
   @ApiResponse({
   status: 200,
-  description: 'Contract verifier successfully deleted',
+  description: 'Verified contract successfully deleted',
   type: VerifierDeletionResponse,
+  })
+  @ApiResponse({
+  status: 400,
+  description: 'Could not determine the owner of the contract',
+  })
+  @ApiResponse({
+  status: 404,
+  description: 'Verified contract not found for the given address',
   })
   async deleteVerifier(@Body() argument: VerifierDeletion): Promise<VerifierDeletionResponse> {
     const response = await this.verifierService.removeContractVerifierSource(argument);
