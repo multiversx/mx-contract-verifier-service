@@ -40,6 +40,7 @@ import { ContractVerifierRepository } from '../database/src';
 import { DockerRunner } from '../services/src/docker/docker.runner';
 import { PinataService } from '../services/src/pinata/pinata.service';
 import { VerifierService } from "../services/src/verifier";
+import { validateFromExistingMock } from './mocks/validate.from.existing.mock';
 import { validatePayloadMock } from './mocks/validate.payload.mock';
 import { dockerImage, mockAddress, mockCodeHash, pinataHash, verifiedContractMock } from './mocks/verified.contract.mock';
 import { verifiedContractInfoSourceMock } from './mocks/verified.source.mock';
@@ -403,5 +404,13 @@ describe('VerifierService', () => {
             ipfsFileHash: pinataHash,
             dockerImage: dockerImage,
         });
+    });
+
+    it('should validate from existing contract - existing not found', async () => {
+        contractVerifierRepository.findOne.mockResolvedValue(null);
+
+        await expect(service.validateFromExisting(validateFromExistingMock)).rejects.toThrow(
+            new NotFoundException('Verified contract not found for address: erd1qqqqqqqqqqqqqpgqvxzjqasv3jsu5kxtk8ergnqdhuk3vfmnd8ss3hzc3q')
+        );
     });
 });
