@@ -2,7 +2,6 @@ import {
   CacheInfo,
   ContractVerifier,
   ContractVerifierModel,
-  ContractVerifierOutModel,
   ContractVerifierSource,
   ContractVerifierStatus,
   SuccessfulVerifierResponse,
@@ -53,36 +52,6 @@ export class VerifierService {
     this.logger = new Logger(VerifierService.name);
   }
 
-  private async getContractVerifierModel(
-    address: string,
-  ): Promise<ContractVerifierModel | undefined> {
-    return await this.cacheService.getOrSet(
-      CacheInfo.VerifiedContractModel(address).key,
-      async () => await this.getContractVerifierModelFromDb(address),
-      CacheInfo.VerifiedContractModel(address).ttl,
-    );
-  }
-
-  private async getContractVerifierModelFromDb(
-    address: string,
-  ): Promise<ContractVerifierModel | undefined> {
-    const result = await this.contractVerifierRepository.findOne(address);
-    if (!result) {
-      return undefined;
-    }
-
-    return {
-      codeHash: result.codeHash,
-      source: {
-        abi: result.source.abi,
-        contract: result.source.contract,
-      },
-      status: result.status,
-      ipfsFileHash: result.ipfsFileHash,
-      dockerImage: result.dockerImage,
-    };
-  }
-
   public async getContractVerifier(
     address: string,
     dependencyDepth: number = 0,
@@ -99,21 +68,8 @@ export class VerifierService {
       throw new NotFoundException(`Verified contract not found for address: ${address}`);
     }
 
-    let apiResponse: any;
-    try {
-      apiResponse = await this.apiService.get(
-        `${this.commonConfigurationService.config.urls.api}/accounts/${address}`,
-      );
-    } catch (error: any) {
-      this.logger.error(
-        `Error fetching account data for address ${address}, error: ${error.message}`,
-      );
-      throw new InternalServerErrorException(
-        `Failed to fetch account data for address ${address}`,
-      );
-    }
-
-    const remoteCodeHash: string = apiResponse.data?.codeHash;
+    const apiResponse = await this.getContractDataFromApi(address);
+    const remoteCodeHash = apiResponse?.codeHash;
     if (!remoteCodeHash) {
       this.logger.log(`No remote code hash for address ${address}`);
       throw new NotFoundException(`Verified contract not found for address: ${address}`);
@@ -165,6 +121,37 @@ export class VerifierService {
     return returnedData;
   }
 
+  private async getContractVerifierModel(
+    address: string,
+  ): Promise<ContractVerifierModel | undefined> {
+    return await this.cacheService.getOrSet(
+      CacheInfo.VerifiedContractModel(address).key,
+      async () => await this.getContractVerifierModelFromDb(address),
+      CacheInfo.VerifiedContractModel(address).ttl,
+    );
+  }
+
+  private async getContractVerifierModelFromDb(
+    address: string,
+  ): Promise<ContractVerifierModel | undefined> {
+    const result = await this.contractVerifierRepository.findOne(address);
+    if (!result) {
+      return undefined;
+    }
+
+    return {
+      address: result.address,
+      codeHash: result.codeHash,
+      source: {
+        abi: result.source.abi,
+        contract: result.source.contract,
+      },
+      status: result.status,
+      ipfsFileHash: result.ipfsFileHash,
+      dockerImage: result.dockerImage,
+    };
+  }
+
   public async getVerifiedContracts(): Promise<string[]> {
     const data = await this.getVerifiedContractsOutModel(['address']);
     return data.map((contract) => contract.address || '');
@@ -176,7 +163,7 @@ export class VerifierService {
   }
 
   private selectFieldsToInclude(
-    fieldsToInclude?: (keyof ContractVerifierOutModel)[],
+    fieldsToInclude?: (keyof ContractVerifierModel)[],
   ): Record<string, number> {
     const selectFields: Record<string, number> = {};
     if (fieldsToInclude) {
@@ -188,8 +175,8 @@ export class VerifierService {
   }
 
   private async getVerifiedContractsOutModel(
-    fieldsToInclude?: (keyof ContractVerifierOutModel)[],
-  ): Promise<Partial<ContractVerifierOutModel>[]> {
+    fieldsToInclude?: (keyof ContractVerifierModel)[],
+  ): Promise<Partial<ContractVerifierModel>[]> {
     const selectFields = this.selectFieldsToInclude(fieldsToInclude);
 
     const result = await this.contractVerifierRepository.findVerified(selectFields);
@@ -205,8 +192,8 @@ export class VerifierService {
   }
 
   private async getOutdatedContractsOutModel(
-    fieldsToInclude?: (keyof ContractVerifierOutModel)[],
-  ): Promise<Partial<ContractVerifierOutModel>[]> {
+    fieldsToInclude?: (keyof ContractVerifierModel)[],
+  ): Promise<Partial<ContractVerifierModel>[]> {
     const selectFields = this.selectFieldsToInclude(fieldsToInclude);
 
     const result = await this.contractVerifierRepository.findOutdated(selectFields);
@@ -243,19 +230,8 @@ export class VerifierService {
     const verifiedContracts = await this.getVerifiedContractsAndCodeHashes();
 
     for (const contract of verifiedContracts) {
-      let apiResponse: any;
-      try {
-        apiResponse = await this.apiService.get(
-          `${this.commonConfigurationService.config.urls.api}/accounts/${contract.address}`,
-        );
-      } catch (error: any) {
-        this.logger.error(
-          `Error fetching account data for contract ${contract.address}, error: ${error.message}`,
-        );
-        continue;
-      }
-
-      const remoteCodeHash: string = apiResponse.data?.codeHash;
+      const apiResponse = await this.getContractDataFromApi(contract.address, false);
+      const remoteCodeHash: string | undefined = apiResponse?.codeHash;
       if (!remoteCodeHash) {
         this.logger.log(`No remote code hash for contract ${contract.address}`);
         continue;
@@ -275,6 +251,15 @@ export class VerifierService {
     }
   }
 
+  private async changeContractVerifierStatusTo(
+    contractAddress: string,
+    status: ContractVerifierStatus,
+  ) {
+    return await this.contractVerifierRepository.save(contractAddress, {
+      status,
+    });
+  }
+
   public async getContractVerifierCodeHash(
     address: string,
   ): Promise<VerifierCodeHashResponse> {
@@ -287,22 +272,9 @@ export class VerifierService {
     return { codeHash: data.codeHash || '' };
   }
 
-  public async removeContractVerifierSource(body: VerifierDeletion): Promise<any> {
-    let apiResponse: any;
-    try {
-      apiResponse = await this.apiService.get(
-        `${this.commonConfigurationService.config.urls.api}/accounts/${body.payload.contract}`,
-      );
-    } catch (error: any) {
-      this.logger.error(
-        `Error fetching account data for contract ${body.payload.contract}, error: ${error.message}`,
-      );
-      throw new InternalServerErrorException(
-        `Failed to fetch account data for contract ${body.payload.contract}`,
-      );
-    }
-
-    const ownerAddress = apiResponse.data?.ownerAddress;
+  public async removeContractVerifierSource(body: VerifierDeletion): Promise<ContractVerifierModel> {
+    const apiResponse = await this.getContractDataFromApi(body.payload.contract);
+    const ownerAddress = apiResponse?.ownerAddress;
     if (!ownerAddress) {
       this.logger.error(`No owner address for contract ${body.payload.contract}`);
       throw new BadRequestException(
@@ -315,7 +287,15 @@ export class VerifierService {
     }
 
     const contractAddress = body.payload.contract;
-    const result = await this.deleteContractVerifier(contractAddress);
+    let result: ContractVerifierModel | undefined;
+
+    try {
+      result = await this.deleteContractVerifier(contractAddress);
+    } catch (error) {
+      this.logger.error(`Error deleting contract verifier for address ${contractAddress}: ${error}`);
+      throw new InternalServerErrorException('Failed to delete contract verifier');
+    }
+
     if (!result) {
       throw new NotFoundException(
         `Verified contract not found for address: ${contractAddress}`,
@@ -360,15 +340,6 @@ export class VerifierService {
     const secondVerificationResult = verifier.verify(verifyBytes, signatureAsBuffer);
 
     return firstVerificationResult || secondVerificationResult;
-  }
-
-  private async changeContractVerifierStatusTo(
-    contractAddress: string,
-    status: ContractVerifierStatus,
-  ) {
-    return await this.contractVerifierRepository.save(contractAddress, {
-      status: status,
-    });
   }
 
   public async validate(validateBody: Verifier): Promise<SuccessfulVerifierResponse> {
@@ -447,21 +418,8 @@ export class VerifierService {
       this.logger.log(`Code hash read from ${codeHashFilePath} - ${codeHash}`);
       this.logger.log(`Contract ABI file read from ${contractAbiFileSourcePath}`);
 
-      let apiResponse;
-      try {
-        apiResponse = await this.apiService.get(
-          `${this.commonConfigurationService.config.urls.api}/accounts/${contractAddress}`,
-        );
-      } catch (error: any) {
-        this.logger.error(
-          `Error fetching account data for contract ${contractAddress}, error: ${error.message}`,
-        );
-        throw new InternalServerErrorException(
-          `Failed to fetch account data for contract ${contractAddress}`,
-        );
-      }
-
-      const remoteCodeHash = apiResponse.data?.codeHash;
+      const apiResponse = await this.getContractDataFromApi(contractAddress);
+      const remoteCodeHash = apiResponse?.codeHash;
       if (!remoteCodeHash) {
         this.logger.log(`No remote code hash for contract ${contractAddress}`);
         throw new BadRequestException('Could not retrieve code hash for the contract.');
@@ -513,6 +471,27 @@ export class VerifierService {
     } finally {
       temporaryFile.removeCallback();
       temporaryFolder.removeCallback();
+    }
+  }
+
+  private async getContractDataFromApi(address: string, shouldThrowError: boolean = true): Promise<any> {
+    try {
+      const apiResponse = await this.apiService.get(
+        `${this.commonConfigurationService.config.urls.api}/accounts/${address}`,
+      );
+      return apiResponse.data;
+    } catch (error: any) {
+      this.logger.error(
+        `Error fetching account data for contract ${address}, error: ${error.message}`,
+      );
+
+      if (shouldThrowError) {
+        throw new InternalServerErrorException(
+          `Failed to fetch account data for contract ${address}`,
+        );
+      }
+
+      return null;
     }
   }
 }

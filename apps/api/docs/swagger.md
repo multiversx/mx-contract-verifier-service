@@ -1,3 +1,1 @@
-## Welcome the the MultiversX Microservice API!
-
-Here you can set your custom documentation in markdown format
+## Welcome to the MultiversX Contract Verification Microservice API!
