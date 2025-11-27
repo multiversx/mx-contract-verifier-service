@@ -5,10 +5,7 @@ import {
   Verifier,
   VerifierFromExisting,
 } from '@libs/common';
-import {
-  Injectable,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { VerifierService } from '../verifier';
 import { WorkerCallbackService } from './worker.callback.service';
 
@@ -19,8 +16,7 @@ export class WorkerService {
   constructor(
     private readonly verifierService: VerifierService,
     private readonly workerCallbackService: WorkerCallbackService,
-  ) {
-  }
+  ) {}
 
   async workVerifier(taskId: string, validate: Verifier): Promise<void> {
     this.logger.log(`Task ${taskId} - Starting work`);
@@ -42,11 +38,16 @@ export class WorkerService {
       };
 
       await this.updateTask(taskId, TaskStatus.error, errorResponse);
-      console.error(`Error in workVerifier for task ${taskId}; error: ${error.message}, stack: ${error.stack}`);
+      console.error(
+        `Error in workVerifier for task ${taskId}; error: ${error.message}, stack: ${error.stack}`,
+      );
     }
   }
 
-  async workVerifierFromExisting(taskId: string, validate: VerifierFromExisting): Promise<void> {
+  async workVerifierFromExisting(
+    taskId: string,
+    validate: VerifierFromExisting,
+  ): Promise<void> {
     this.logger.log(`Task ${taskId} - Starting work`);
 
     try {
@@ -67,7 +68,7 @@ export class WorkerService {
 
       await this.updateTask(taskId, TaskStatus.error, errorResponse);
       console.error(
-        `Error in workVerifierFromExisting for task ${taskId}; error: ${error.message}, stack: ${error.stack}`
+        `Error in workVerifierFromExisting for task ${taskId}; error: ${error.message}, stack: ${error.stack}`,
       );
     }
   }

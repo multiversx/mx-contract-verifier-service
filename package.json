@@ -10,7 +10,7 @@
     "build": "nest build",
     "build:all": "nest build api && nest build transactions-processor && nest build cache-warmer && nest build queue-worker && nest build common",
     "build:infra": "npm run build:all && npm run copy-config-infra",
-    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "format": "prettier --write \"{apps,libs,test}/**/*.ts\"",
     "start:api": "cross-env NODE_APP=api npm run start",
     "start:cache-warmer": "cross-env NODE_APP=cache-warmer npm run start",
     "start:queue-worker": "cross-env NODE_APP=queue-worker npm run start",

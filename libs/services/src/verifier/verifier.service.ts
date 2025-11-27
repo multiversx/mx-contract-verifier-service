@@ -87,7 +87,6 @@ export class VerifierService {
       contract: JSON.parse(Buffer.from(data.source.contract, 'base64').toString()),
     };
 
-
     // Filter result by depth
     if (returnedData.source?.contract && dependencyDepth > -1) {
       returnedData.source.contract.entries = returnedData.source.contract.entries.filter(
@@ -273,7 +272,9 @@ export class VerifierService {
     return { codeHash: data.codeHash || '' };
   }
 
-  public async removeContractVerifierSource(body: VerifierDeletion): Promise<ContractVerifierModel> {
+  public async removeContractVerifierSource(
+    body: VerifierDeletion,
+  ): Promise<ContractVerifierModel> {
     const apiResponse = await this.getContractDataFromApi(body.payload.contract);
     let ownerAddress: string | undefined = apiResponse?.ownerAddress;
     if (!ownerAddress) {
@@ -297,7 +298,9 @@ export class VerifierService {
     try {
       result = await this.deleteContractVerifier(contractAddress);
     } catch (error) {
-      this.logger.error(`Error deleting contract verifier for address ${contractAddress}: ${error}`);
+      this.logger.error(
+        `Error deleting contract verifier for address ${contractAddress}: ${error}`,
+      );
       throw new InternalServerErrorException('Failed to delete contract verifier');
     }
 
@@ -385,7 +388,9 @@ export class VerifierService {
     const verifiedContract = await this.getContractVerifierModel(contractAddress);
     if (verifiedContract) {
       if (verifiedContract.codeHash === hexRemoteCodeHash) {
-        this.logger.log(`Contract ${contractAddress} is already verified and the code hash did not change`);
+        this.logger.log(
+          `Contract ${contractAddress} is already verified and the code hash did not change`,
+        );
 
         return new SuccessfulVerifierResponse({
           address: contractAddress,
@@ -469,7 +474,9 @@ export class VerifierService {
         this.logger.log(
           `Source code hashes do not match - ${codeHash.toString()} - ${hexRemoteCodeHash}`,
         );
-        throw new BadRequestException('Source code hash does not match deployed contract');
+        throw new BadRequestException(
+          'Source code hash does not match deployed contract',
+        );
       }
 
       const source = {
@@ -513,27 +520,47 @@ export class VerifierService {
     }
   }
 
-  async validateFromExisting(validateFromExisting: VerifierFromExisting): Promise<SuccessfulVerifierResponse> {
+  async validateFromExisting(
+    validateFromExisting: VerifierFromExisting,
+  ): Promise<SuccessfulVerifierResponse> {
     this.logger.log(
       `Verifier from existing process started for contract ${validateFromExisting.contract}`,
     );
 
-    const verfiedContract = await this.getContractVerifierModel(validateFromExisting.existingVerifiedContract);
+    const verfiedContract = await this.getContractVerifierModel(
+      validateFromExisting.existingVerifiedContract,
+    );
     if (!verfiedContract) {
-      this.logger.log(`No verified contract found for address ${validateFromExisting.existingVerifiedContract}`);
-      throw new NotFoundException(`Verified contract not found for address: ${validateFromExisting.existingVerifiedContract}`);
+      this.logger.log(
+        `No verified contract found for address ${validateFromExisting.existingVerifiedContract}`,
+      );
+      throw new NotFoundException(
+        `Verified contract not found for address: ${validateFromExisting.existingVerifiedContract}`,
+      );
     }
 
-    const verifiedContractApiData = await this.getContractDataFromApi(validateFromExisting.existingVerifiedContract);
-    const verifiedRemoteCodeHash = Buffer.from(verifiedContractApiData?.codeHash, 'base64').toString('hex');
+    const verifiedContractApiData = await this.getContractDataFromApi(
+      validateFromExisting.existingVerifiedContract,
+    );
+    const verifiedRemoteCodeHash = Buffer.from(
+      verifiedContractApiData?.codeHash,
+      'base64',
+    ).toString('hex');
 
     if (verfiedContract.codeHash !== verifiedRemoteCodeHash) {
-      this.logger.log(`Bytecode changed for existing verified contract ${validateFromExisting.existingVerifiedContract}`);
+      this.logger.log(
+        `Bytecode changed for existing verified contract ${validateFromExisting.existingVerifiedContract}`,
+      );
       throw new BadRequestException('Bytecode changed for existing verified contract');
     }
 
-    const contractApiData = await this.getContractDataFromApi(validateFromExisting.contract);
-    const contractRemoteCodeHash = Buffer.from(contractApiData?.codeHash, 'base64').toString('hex');
+    const contractApiData = await this.getContractDataFromApi(
+      validateFromExisting.contract,
+    );
+    const contractRemoteCodeHash = Buffer.from(
+      contractApiData?.codeHash,
+      'base64',
+    ).toString('hex');
 
     if (verfiedContract.codeHash !== contractRemoteCodeHash) {
       this.logger.log(
@@ -561,7 +588,10 @@ export class VerifierService {
     });
   }
 
-  private async getContractDataFromApi(address: string, shouldThrowError: boolean = true): Promise<any> {
+  private async getContractDataFromApi(
+    address: string,
+    shouldThrowError: boolean = true,
+  ): Promise<any> {
     let apiResponse;
 
     try {

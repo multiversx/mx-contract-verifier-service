@@ -55,4 +55,4 @@ import { WorkerCallbackService, WorkerService } from './worker';
     WorkerService,
   ],
 })
-export class ServicesModule { }
+export class ServicesModule {}

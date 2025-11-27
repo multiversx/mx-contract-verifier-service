@@ -3,11 +3,7 @@ import { Module } from '@nestjs/common';
 import { VerifierController } from './verifier.controller';
 
 @Module({
-  imports: [
-    ServicesModule,
-  ],
-  controllers: [
-    VerifierController,
-  ],
+  imports: [ServicesModule],
+  controllers: [VerifierController],
 })
-export class VerifierModule { }
+export class VerifierModule {}

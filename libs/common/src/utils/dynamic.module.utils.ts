@@ -1,15 +1,8 @@
-import {
-  CacheModule,
-  RedisCacheModuleOptions,
-} from '@multiversx/sdk-nestjs-cache';
+import { CacheModule, RedisCacheModuleOptions } from '@multiversx/sdk-nestjs-cache';
 import { ERDNEST_CONFIG_SERVICE } from '@multiversx/sdk-nestjs-common';
 import { ApiModule, ApiModuleOptions } from '@multiversx/sdk-nestjs-http';
 import { DynamicModule, Provider } from '@nestjs/common';
-import {
-  ClientOptions,
-  ClientProxyFactory,
-  Transport,
-} from '@nestjs/microservices';
+import { ClientOptions, ClientProxyFactory, Transport } from '@nestjs/microservices';
 import {
   CommonConfigModule,
   CommonConfigService,

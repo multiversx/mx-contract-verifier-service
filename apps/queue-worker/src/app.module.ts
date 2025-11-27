@@ -22,12 +22,7 @@ import { VerifierQueueService } from './worker/queues/verifier.queue.service';
     ServicesModule,
     PubSubListenerModule.forRoot({ enableConsumer: true }),
   ],
-  providers: [
-    VerifierQueueService,
-  ],
-  controllers: [
-    ApiMetricsController,
-    HealthCheckController,
-  ],
+  providers: [VerifierQueueService],
+  controllers: [ApiMetricsController, HealthCheckController],
 })
-export class AppModule { }
+export class AppModule {}

@@ -1,7 +1,7 @@
-import { Constants } from "@multiversx/sdk-nestjs-common";
+import { Constants } from '@multiversx/sdk-nestjs-common';
 
 export class CacheInfo {
-  key: string = "";
+  key: string = '';
   ttl: number = Constants.oneSecond() * 6;
 
   static VerifiedContractModel(address: string): CacheInfo {

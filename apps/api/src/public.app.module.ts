@@ -6,14 +6,7 @@ import { CommonConfigModule } from '@libs/common/config/common.config.module';
 import { AppConfigModule } from './config/app-config.module';
 
 @Module({
-  imports: [
-    LoggingModule,
-    EndpointsModule,
-    AppConfigModule,
-    CommonConfigModule,
-  ],
-  providers: [
-    DynamicModuleUtils.getNestJsApiConfigService(),
-  ],
+  imports: [LoggingModule, EndpointsModule, AppConfigModule, CommonConfigModule],
+  providers: [DynamicModuleUtils.getNestJsApiConfigService()],
 })
-export class PublicAppModule { }
+export class PublicAppModule {}

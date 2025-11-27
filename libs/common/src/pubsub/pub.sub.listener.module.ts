@@ -13,9 +13,7 @@ export interface PubSubListenerModuleOptions {
 export class PubSubListenerModule {
   static forRoot(options: PubSubListenerModuleOptions = {}): DynamicModule {
     // Only register controller if enableConsumer is true
-    const controllers = options.enableConsumer
-      ? [PubSubListenerController]
-      : [];
+    const controllers = options.enableConsumer ? [PubSubListenerController] : [];
 
     return {
       module: PubSubListenerModule,
@@ -26,9 +24,7 @@ export class PubSubListenerModule {
         QueueWorkerModule,
       ],
       controllers,
-      providers: [
-        DynamicModuleUtils.getPubSubService(),
-      ],
+      providers: [DynamicModuleUtils.getPubSubService()],
       exports: ['PUBSUB_SERVICE'],
     };
   }

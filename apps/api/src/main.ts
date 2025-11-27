@@ -2,7 +2,8 @@ import * as dotenv from 'dotenv';
 import { resolve } from 'path';
 
 // Determine which .env file to load based on NODE_ENV
-const envPath = process.env.NODE_ENV === 'infra' ? '.env' : `.env.${process.env.NODE_ENV ?? 'mainnet'}`;
+const envPath =
+  process.env.NODE_ENV === 'infra' ? '.env' : `.env.${process.env.NODE_ENV ?? 'mainnet'}`;
 dotenv.config({
   path: resolve(process.cwd(), envPath),
 });
@@ -20,7 +21,11 @@ import { Logger, NestInterceptor, ValidationPipe } from '@nestjs/common';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import cookieParser from 'cookie-parser';
 import { PubSubListenerModule } from '@libs/common';
-import { LoggingInterceptor, MetricsService, RequestCpuTimeInterceptor } from '@multiversx/sdk-nestjs-monitoring';
+import {
+  LoggingInterceptor,
+  MetricsService,
+  RequestCpuTimeInterceptor,
+} from '@multiversx/sdk-nestjs-monitoring';
 import { LoggerInitializer } from '@multiversx/sdk-nestjs-common';
 
 import '@multiversx/sdk-nestjs-common/lib/utils/extensions/array.extensions';

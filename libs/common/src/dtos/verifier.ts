@@ -8,7 +8,11 @@ export class Verifier {
     Object.assign(this, partial);
   }
 
-  @ApiProperty({ description: 'Payload signature (no longer required)', type: String, required: false })
+  @ApiProperty({
+    description: 'Payload signature (no longer required)',
+    type: String,
+    required: false,
+  })
   @IsString()
   @IsOptional()
   signature?: string;

@@ -1,10 +1,7 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { CommonConfigModule, CommonConfigService } from '../../common/src';
-import {
-  ContractVerifier,
-  ContractVerifierSchema,
-} from '../../entities/src';
+import { ContractVerifier, ContractVerifierSchema } from '../../entities/src';
 import { ContractVerifierRepository } from './repositories/contract.verifier.repository';
 
 @Module({
@@ -28,5 +25,4 @@ import { ContractVerifierRepository } from './repositories/contract.verifier.rep
   providers: [ContractVerifierRepository],
   exports: [ContractVerifierRepository],
 })
-
 export class DatabaseModule {}

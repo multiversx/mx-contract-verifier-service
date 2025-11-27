@@ -4,17 +4,31 @@ import { ErrorVerifierResponse, SuccessfulVerifierResponse } from './verifier.re
 
 @ApiExtraModels(SuccessfulVerifierResponse, ErrorVerifierResponse)
 export class Task {
-
   @ApiProperty({ description: 'The status of the task.', enum: TaskStatus })
   status: TaskStatus = TaskStatus.unknown;
 
-  @ApiProperty({ description: 'The date and time when the task was queued.', type: String, format: 'date-time', required: false })
+  @ApiProperty({
+    description: 'The date and time when the task was queued.',
+    type: String,
+    format: 'date-time',
+    required: false,
+  })
   queued?: Date = new Date();
 
-  @ApiProperty({ description: 'The date and time when the task started.', type: String, format: 'date-time', required: false })
+  @ApiProperty({
+    description: 'The date and time when the task started.',
+    type: String,
+    format: 'date-time',
+    required: false,
+  })
   started?: Date;
 
-  @ApiProperty({ description: 'The date and time when the task finished.', type: String, format: 'date-time', required: false })
+  @ApiProperty({
+    description: 'The date and time when the task finished.',
+    type: String,
+    format: 'date-time',
+    required: false,
+  })
   finished?: Date;
 
   @ApiProperty({

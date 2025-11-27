@@ -45,7 +45,9 @@ export class TaskService {
     return await this.run('validate', { validate });
   }
 
-  async runVerifierFromExisting(validateFromExisting: VerifierFromExisting): Promise<TaskIdResponse> {
+  async runVerifierFromExisting(
+    validateFromExisting: VerifierFromExisting,
+  ): Promise<TaskIdResponse> {
     this.logger.log(
       `Received verifier request for contract ${validateFromExisting.contract} from existing verified contract ${validateFromExisting.existingVerifiedContract}`,
     );
@@ -85,13 +87,19 @@ export class TaskService {
         `${this.configService.config.urls.api}/accounts/${address}`,
       );
     } catch (error: any) {
-      this.logger.error(`Error fetching account data for contract ${address}, error: ${error.message}`);
-      throw new InternalServerErrorException(`Failed to fetch account data for contract ${address}`);
+      this.logger.error(
+        `Error fetching account data for contract ${address}, error: ${error.message}`,
+      );
+      throw new InternalServerErrorException(
+        `Failed to fetch account data for contract ${address}`,
+      );
     }
 
     const ownerAddress = response.data?.ownerAddress;
     if (!ownerAddress) {
-      throw new BadRequestException('Could not determine owner address for the contract.');
+      throw new BadRequestException(
+        'Could not determine owner address for the contract.',
+      );
     }
   }
 }

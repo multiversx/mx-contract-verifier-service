@@ -1,5 +1,10 @@
 import { Address } from '@multiversx/sdk-core';
-import { registerDecorator, ValidationOptions, ValidatorConstraint, ValidatorConstraintInterface } from 'class-validator';
+import {
+  registerDecorator,
+  ValidationOptions,
+  ValidatorConstraint,
+  ValidatorConstraintInterface,
+} from 'class-validator';
 
 @ValidatorConstraint({ async: false })
 export class IsScAddressConstraint implements ValidatorConstraintInterface {
