@@ -47,7 +47,6 @@ export class PubSubListenerController {
         contract: value.validateFromExisting.contract,
         environment }
     );
-    this.logger.log('Received validateFromExisting event', { taskId, type, value, environment });
     await this.workerService.addVerifierFromExistingJobIntoQueue(type, taskId, value);
   }
 }
