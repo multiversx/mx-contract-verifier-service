@@ -256,7 +256,7 @@ export class VerifierService {
     status: ContractVerifierStatus,
   ) {
     return await this.contractVerifierRepository.save(contractAddress, {
-      status: status,
+      status,
     });
   }
 
@@ -489,9 +489,9 @@ export class VerifierService {
         throw new InternalServerErrorException(
           `Failed to fetch account data for contract ${address}`,
         );
-      } else {
-        return null;
       }
+
+      return null;
     }
 
     return apiResponse.data;
