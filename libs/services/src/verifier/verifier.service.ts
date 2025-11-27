@@ -475,16 +475,16 @@ export class VerifierService {
   }
 
   private async getContractDataFromApi(address: string, shouldThrowError: boolean = true): Promise<any> {
-    let apiResponse;
-
     try {
-      apiResponse = await this.apiService.get(
+      const apiResponse = await this.apiService.get(
         `${this.commonConfigurationService.config.urls.api}/accounts/${address}`,
       );
+      return apiResponse.data;
     } catch (error: any) {
       this.logger.error(
         `Error fetching account data for contract ${address}, error: ${error.message}`,
       );
+
       if (shouldThrowError) {
         throw new InternalServerErrorException(
           `Failed to fetch account data for contract ${address}`,
@@ -493,7 +493,5 @@ export class VerifierService {
 
       return null;
     }
-
-    return apiResponse.data;
   }
 }
