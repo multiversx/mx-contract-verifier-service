@@ -42,7 +42,7 @@ export class WorkerService {
       };
 
       await this.updateTask(taskId, TaskStatus.error, errorResponse);
-      console.error(`Error in workVerifier for task ${taskId}; error: ${error.message}, stack: ${error.stack}`);
+      this.logger.error(`Error in workVerifier for task ${taskId}; error: ${error.message}, stack: ${error.stack}`);
     }
   }
 
