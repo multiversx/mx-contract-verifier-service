@@ -6,46 +6,43 @@ import {
 } from '@libs/common';
 import {
   Injectable,
+  Logger,
 } from '@nestjs/common';
-import AsyncLock from "async-lock";
 import { VerifierService } from '../verifier';
 import { WorkerCallbackService } from './worker.callback.service';
 
 @Injectable()
 export class WorkerService {
-  private readonly lock: AsyncLock;
+  private readonly logger: Logger = new Logger(WorkerService.name);
 
   constructor(
     private readonly verifierService: VerifierService,
     private readonly workerCallbackService: WorkerCallbackService,
   ) {
-    this.lock = new AsyncLock();
   }
 
   async workVerifier(taskId: string, validate: Verifier): Promise<void> {
+    this.logger.log(`Task ${taskId} - Starting work`);
+
     try {
-      await this.work(taskId, async () => await this.verifierService.validate(validate));
+      await this.updateTask(taskId, TaskStatus.started);
+
+      const workResult = await this.verifierService.validate(validate);
+
+      await this.updateTask(taskId, TaskStatus.finished, workResult);
+      this.logger.log(`Task ${taskId} - Work completed successfully`);
     } catch (error: any) {
-      console.error(`Error in workVerifier for task ${taskId}; error: ${error.message}, stack: ${error.stack}`);
+      this.logger.error(`Task ${taskId} failed`);
+
+      const errorResponse = {
+        message: error.response?.message || error.message || 'An error occurred',
+        error: error.response?.error || 'Error',
+        statusCode: error.response?.statusCode || 500,
+      };
+
+      await this.updateTask(taskId, TaskStatus.error, errorResponse);
+      this.logger.error(`Error in workVerifier for task ${taskId}; error: ${error.message}, stack: ${error.stack}`);
     }
-  }
-
-  private async work(taskId: string, promise: () => Promise<SuccessfulVerifierResponse>): Promise<SuccessfulVerifierResponse> {
-    await this.updateTask(taskId, TaskStatus.queued);
-
-    return await this.lock.acquire('task', async done => {
-      try {
-        await this.updateTask(taskId, TaskStatus.started);
-
-        const result = await promise();
-
-        await this.updateTask(taskId, TaskStatus.finished, result);
-        done(undefined, result);
-      } catch (error: any) {
-        await this.updateTask(taskId, TaskStatus.error, error.response);
-        done(error);
-      }
-    });
   }
 
   private async updateTask(

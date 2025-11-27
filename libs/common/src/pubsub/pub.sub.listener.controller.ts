@@ -1,6 +1,6 @@
 import { Controller, Logger } from "@nestjs/common";
 import { EventPattern } from "@nestjs/microservices";
-import { WorkerService } from "apps/queue-worker/src/worker/worker.service";
+import { WorkerService } from "../queue-worker";
 
 @Controller()
 export class PubSubListenerController {

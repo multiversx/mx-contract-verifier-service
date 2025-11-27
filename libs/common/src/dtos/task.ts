@@ -8,3 +8,7 @@ export class Task {
   finished?: Date;
   result?: SuccessfulVerifierResponse | ErrorVerifierResponse;
 }
+
+export class TaskIdResponse {
+  taskId!: string;
+}

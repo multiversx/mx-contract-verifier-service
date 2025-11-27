@@ -1,7 +1,7 @@
-import { Verifier } from "@libs/common";
 import { InjectQueue } from "@nestjs/bull";
 import { Injectable, Logger } from "@nestjs/common";
 import { Queue } from "bull";
+import { Verifier } from "../dtos";
 
 @Injectable()
 export class WorkerService {
