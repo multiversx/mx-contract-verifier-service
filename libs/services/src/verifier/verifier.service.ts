@@ -372,6 +372,30 @@ export class VerifierService {
       `Verifier process started for contract ${validateBody.payload.contract}`,
     );
 
+    const contractAddress = validateBody.payload.contract;
+
+    const apiResponse = await this.getContractDataFromApi(contractAddress);
+    const remoteCodeHash = apiResponse?.codeHash;
+    if (!remoteCodeHash) {
+      this.logger.log(`No remote code hash for contract ${contractAddress}`);
+      throw new BadRequestException('Could not retrieve code hash for the contract.');
+    }
+    const hexRemoteCodeHash = Buffer.from(remoteCodeHash, 'base64').toString('hex');
+
+    const verifiedContract = await this.getContractVerifierModel(contractAddress);
+    if (verifiedContract) {
+      if (verifiedContract.codeHash === hexRemoteCodeHash) {
+        this.logger.log(`Contract ${contractAddress} is already verified and the code hash did not change`);
+
+        return new SuccessfulVerifierResponse({
+          address: contractAddress,
+          codeHash: verifiedContract.codeHash,
+          ipfsFileHash: verifiedContract.ipfsFileHash,
+          dockerImage: verifiedContract.dockerImage,
+        });
+      }
+    }
+
     const sourceCode = validateBody.payload.sourceCode;
     const contractName = sanitizeFilename(
       sourceCode.name || sourceCode.metadata.contractName,
@@ -397,8 +421,6 @@ export class VerifierService {
       template: `tmp-${contractName}-XXXXXX`,
       unsafeCleanup: true,
     });
-
-    const contractAddress = validateBody.payload.contract;
 
     this.logger.log(
       `Write contract received source code temporary to: ${temporaryFile.name}`,
@@ -442,14 +464,6 @@ export class VerifierService {
       this.logger.log(`Contract source read from ${contractSourceFilePath}`);
       this.logger.log(`Code hash read from ${codeHashFilePath} - ${codeHash}`);
       this.logger.log(`Contract ABI file read from ${contractAbiFileSourcePath}`);
-
-      const apiResponse = await this.getContractDataFromApi(contractAddress);
-      const remoteCodeHash = apiResponse?.codeHash;
-      if (!remoteCodeHash) {
-        this.logger.log(`No remote code hash for contract ${contractAddress}`);
-        throw new BadRequestException('Could not retrieve code hash for the contract.');
-      }
-      const hexRemoteCodeHash = Buffer.from(remoteCodeHash, 'base64').toString('hex');
 
       if (hexRemoteCodeHash !== codeHash.toString()) {
         this.logger.log(

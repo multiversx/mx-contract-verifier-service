@@ -399,6 +399,12 @@ describe('VerifierService', () => {
     });
 
     it('should throw invalid docker image', async () => {
+        apiService.get.mockResolvedValue({
+            data: {
+                codeHash: Buffer.from('7f7376f37a9f809a1a9b21b60a2a9afe7c9d22ab65807324f537ab3696177777', 'hex').toString('base64'),
+            },
+        });
+
         // remove docker image from mock
         const validatePayloadMockWithoutDockerImage = JSON.parse(JSON.stringify(validatePayloadMock));
         validatePayloadMockWithoutDockerImage.payload.dockerImage = '';
@@ -410,6 +416,11 @@ describe('VerifierService', () => {
 
     it('should throw docker execution error', async () => {
         contractVerifierRepository.findOne.mockResolvedValue(verifiedContractMock);
+        apiService.get.mockResolvedValue({
+            data: {
+                codeHash: Buffer.from('7f7376f37a9f809a1a9b21b60a2a9afe7c9d22ab65807324f537ab3696177777', 'hex').toString('base64'),
+            },
+        });
 
         jest.spyOn((service as any).dockerRunner, 'exec').mockRejectedValueOnce(new Error('Docker execution failed'));
 
@@ -467,6 +478,28 @@ describe('VerifierService', () => {
                 hash: pinataHash,
                 url: commonConfigService.config.pinata.fileStorageCdnUrl + '/' + pinataHash,
             });
+        });
+
+        const result = await service.validate(validatePayloadMock);
+        expect(result).toEqual({
+            address: mockAddress,
+            codeHash: mockCodeHash,
+            ipfsFileHash: pinataHash,
+            dockerImage: dockerImage,
+        });
+    });
+
+    it('should validate contract - already verified with same code hash', async () => {
+        cacheService.getOrSet.mockImplementation((_key, callback) => {
+            return Promise.resolve(callback());
+        });
+
+        contractVerifierRepository.findOne.mockResolvedValue(verifiedContractMock);
+
+        apiService.get.mockResolvedValue({
+            data: {
+                codeHash: Buffer.from('7f7376f37a9f809a1a9b21b60a2a9afe7c9d22ab65807324f537ab3696110a58', 'hex').toString('base64'),
+            },
         });
 
         const result = await service.validate(validatePayloadMock);
