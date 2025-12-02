@@ -260,7 +260,7 @@ describe('VerifierService', () => {
         };
 
         await expect(service.removeContractVerifierSource(requestBody)).rejects.toThrow(
-            new BadRequestException('Could not determine owner address for the owner contract.')
+            new BadRequestException('Could not determine owner address for the contract.')
         );
     });
 

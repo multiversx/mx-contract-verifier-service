@@ -320,7 +320,7 @@ export class VerifierService {
     if (!ownerAddress) {
       this.logger.error(`No owner address for contract ${address}`);
       throw new BadRequestException(
-        'Could not determine owner address for the owner contract.',
+        'Could not determine owner address for the contract.',
       );
     }
 
