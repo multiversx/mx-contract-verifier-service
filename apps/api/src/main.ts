@@ -37,7 +37,7 @@ import { CommonConfigService } from '@libs/common/config/common.config.service';
 
 async function bootstrap() {
   const publicApp = await NestFactory.create(PublicAppModule);
-  publicApp.use(bodyParser.json({ limit: '1mb' }));
+  publicApp.use(bodyParser.json({ limit: '10mb' }));
   publicApp.enableCors();
   publicApp.useLogger(publicApp.get(WINSTON_MODULE_NEST_PROVIDER));
   publicApp.use(cookieParser());
