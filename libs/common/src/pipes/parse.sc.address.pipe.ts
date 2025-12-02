@@ -1,9 +1,14 @@
-import { Address } from "@multiversx/sdk-core";
-import { ArgumentMetadata, BadRequestException, PipeTransform } from "@nestjs/common";
+import { Address } from '@multiversx/sdk-core';
+import { ArgumentMetadata, BadRequestException, PipeTransform } from '@nestjs/common';
 
-export class ParseScAddressPipe implements PipeTransform<string | undefined, Promise<string | undefined>> {
-  transform(value: string | undefined, metadata: ArgumentMetadata): Promise<string | undefined> {
-    return new Promise(resolve => {
+export class ParseScAddressPipe
+  implements PipeTransform<string | undefined, Promise<string | undefined>>
+{
+  transform(
+    value: string | undefined,
+    metadata: ArgumentMetadata,
+  ): Promise<string | undefined> {
+    return new Promise((resolve) => {
       if (value === undefined || value === '') {
         return resolve(undefined);
       }
@@ -12,7 +17,9 @@ export class ParseScAddressPipe implements PipeTransform<string | undefined, Pro
         return resolve(value);
       }
 
-      throw new BadRequestException(`Validation failed for argument '${metadata.data}' (a bech32 smart contract address is expected)`);
+      throw new BadRequestException(
+        `Validation failed for argument '${metadata.data}' (a bech32 smart contract address is expected)`,
+      );
     });
   }
 }

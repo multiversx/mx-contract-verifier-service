@@ -34,12 +34,9 @@ export class PinataService {
         url: `${this.configurationService.config.pinata.fileStorageCdnUrl}/${response.data.IpfsHash}`,
       };
     } catch (error) {
-      this.logger.error(
-        'An error occurred while trying to add content to Pinata.',
-        {
-          exception: error,
-        },
-      );
+      this.logger.error('An error occurred while trying to add content to Pinata.', {
+        exception: error,
+      });
 
       throw error;
     }

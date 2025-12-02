@@ -1,12 +1,10 @@
-import { ErdnestConfigService } from "@multiversx/sdk-nestjs-common";
-import { Injectable } from "@nestjs/common";
-import { CommonConfigService } from "./common.config.service";
+import { ErdnestConfigService } from '@multiversx/sdk-nestjs-common';
+import { Injectable } from '@nestjs/common';
+import { CommonConfigService } from './common.config.service';
 
 @Injectable()
 export class SdkNestjsConfigServiceImpl implements ErdnestConfigService {
-  constructor(
-    private readonly commonConfigService: CommonConfigService,
-  ) { }
+  constructor(private readonly commonConfigService: CommonConfigService) {}
 
   getSecurityAdmins(): string[] {
     return this.commonConfigService.config.security.admins;

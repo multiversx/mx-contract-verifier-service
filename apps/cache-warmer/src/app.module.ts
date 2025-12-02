@@ -1,5 +1,10 @@
 import { Module } from '@nestjs/common';
-import { ApiMetricsController, CommonConfigModule, DynamicModuleUtils, HealthCheckController } from '@libs/common';
+import {
+  ApiMetricsController,
+  CommonConfigModule,
+  DynamicModuleUtils,
+  HealthCheckController,
+} from '@libs/common';
 import { ApiMetricsModule } from '@libs/common';
 import { LoggingModule } from '@multiversx/sdk-nestjs-common';
 import { AppConfigModule } from './config/app-config.module';
@@ -16,13 +21,7 @@ import { ServicesModule } from '@libs/services';
     AppConfigModule,
     ServicesModule,
   ],
-  providers: [
-    DynamicModuleUtils.getPubSubService(),
-    WarmerService,
-  ],
-  controllers: [
-    ApiMetricsController,
-    HealthCheckController,
-  ],
+  providers: [DynamicModuleUtils.getPubSubService(), WarmerService],
+  controllers: [ApiMetricsController, HealthCheckController],
 })
-export class AppModule { }
+export class AppModule {}

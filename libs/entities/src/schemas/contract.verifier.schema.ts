@@ -39,5 +39,4 @@ export class ContractVerifier {
   status!: ContractVerifierStatus;
 }
 
-export const ContractVerifierSchema =
-  SchemaFactory.createForClass(ContractVerifier);
+export const ContractVerifierSchema = SchemaFactory.createForClass(ContractVerifier);

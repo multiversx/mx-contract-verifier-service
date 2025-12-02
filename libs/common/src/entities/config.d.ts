@@ -21,7 +21,7 @@ export interface Config {
         pinataJwt: string;
         fileStorageCdnUrl: string;
       };
-      network: "devnet" | "testnet" | "mainnet";
+      network: 'devnet' | 'testnet' | 'mainnet';
       urls: {
         api: string;
       };

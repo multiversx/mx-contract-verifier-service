@@ -1,9 +1,18 @@
 import { CacheService } from '@multiversx/sdk-nestjs-cache';
 import { Constants } from '@multiversx/sdk-nestjs-common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { ErrorVerifierResponse, SuccessfulVerifierResponse, TaskStatus } from '../common/src/dtos';
+import {
+  ErrorVerifierResponse,
+  SuccessfulVerifierResponse,
+  TaskStatus,
+} from '../common/src/dtos';
 import { WorkerCallbackService } from '../services/src/worker/worker.callback.service';
-import { dockerImage, mockAddress, mockCodeHash, pinataHash } from './mocks/verified.contract.mock';
+import {
+  dockerImage,
+  mockAddress,
+  mockCodeHash,
+  pinataHash,
+} from './mocks/verified.contract.mock';
 
 describe('WorkerCallbackService', () => {
   let service: WorkerCallbackService;
@@ -71,7 +80,7 @@ describe('WorkerCallbackService', () => {
         codeHash: mockCodeHash,
         ipfsFileHash: pinataHash,
         dockerImage: dockerImage,
-       });
+      });
 
       jest.useFakeTimers();
       jest.setSystemTime(new Date('2025-11-05T15:26:11.967Z'));

@@ -10,4 +10,4 @@ export type ContractVerifierModel = {
   status: ContractVerifierStatus;
   ipfsFileHash: string;
   dockerImage: string;
-}
+};

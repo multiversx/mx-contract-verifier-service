@@ -1,6 +1,11 @@
 import { CacheService } from '@multiversx/sdk-nestjs-cache';
 import { Constants } from '@multiversx/sdk-nestjs-common';
-import { ErrorVerifierResponse, SuccessfulVerifierResponse, Task, TaskStatus } from '../../../common/src/dtos';
+import {
+  ErrorVerifierResponse,
+  SuccessfulVerifierResponse,
+  Task,
+  TaskStatus,
+} from '../../../common/src/dtos';
 
 import { Injectable, Logger } from '@nestjs/common';
 

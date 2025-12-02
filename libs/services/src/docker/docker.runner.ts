@@ -24,10 +24,7 @@ export class DockerRunner {
     }
 
     if (options.packagedSrcPath) {
-      mountArgs.push(
-        '--volume',
-        `${options.packagedSrcPath}:/package-src.json`,
-      );
+      mountArgs.push('--volume', `${options.packagedSrcPath}:/package-src.json`);
     }
 
     if (options.cargoTargetDir) {

@@ -1,18 +1,20 @@
-import { VerifierService } from "@libs/services";
-import { Locker } from "@multiversx/sdk-nestjs-common";
-import { Injectable } from "@nestjs/common";
-import { Cron, CronExpression } from "@nestjs/schedule";
+import { VerifierService } from '@libs/services';
+import { Locker } from '@multiversx/sdk-nestjs-common';
+import { Injectable } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class WarmerService {
-  constructor(
-    private readonly verifierService: VerifierService,
-  ) { }
+  constructor(private readonly verifierService: VerifierService) {}
 
   @Cron(CronExpression.EVERY_HOUR)
   async handleVerifiedContractsWhereBytecodeChanged() {
-    await Locker.lock('update status for verified contracts where bytecode changed', async () => {
-      await this.verifierService.changeContractStatusIfByteCodeChanged();
-    }, true);
+    await Locker.lock(
+      'update status for verified contracts where bytecode changed',
+      async () => {
+        await this.verifierService.changeContractStatusIfByteCodeChanged();
+      },
+      true,
+    );
   }
 }
