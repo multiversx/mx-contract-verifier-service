@@ -1,1 +1,1 @@
-## Welcome the the MultiversX Contract Verification Microservice API!
+## Welcome to the MultiversX Contract Verification Microservice API!
