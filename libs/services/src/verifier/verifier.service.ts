@@ -275,12 +275,16 @@ export class VerifierService {
 
   public async removeContractVerifierSource(body: VerifierDeletion): Promise<ContractVerifierModel> {
     const apiResponse = await this.getContractDataFromApi(body.payload.contract);
-    const ownerAddress = apiResponse?.ownerAddress;
+    let ownerAddress: string | undefined = apiResponse?.ownerAddress;
     if (!ownerAddress) {
       this.logger.error(`No owner address for contract ${body.payload.contract}`);
       throw new BadRequestException(
         'Could not determine owner address for the contract.',
       );
+    }
+
+    if (Address.newFromBech32(ownerAddress).isSmartContract()) {
+      ownerAddress = await this.getOwnerOfOwnerContract(ownerAddress);
     }
 
     if (!this.checkPayloadSignature(body.signature, body.payload, ownerAddress)) {
@@ -304,6 +308,29 @@ export class VerifierService {
     }
 
     return result;
+  }
+
+  /**
+   * Fetches the owner of the contract owner (when the contract owner is itself a smart contract).
+   * If the owner of the contract owner is a smart contract, deletion is not allowed.
+   */
+  private async getOwnerOfOwnerContract(address: string): Promise<string> {
+    const response = await this.getContractDataFromApi(address);
+    const ownerAddress = response?.ownerAddress;
+    if (!ownerAddress) {
+      this.logger.error(`No owner address for contract ${address}`);
+      throw new BadRequestException(
+        'Could not determine owner address for the contract.',
+      );
+    }
+
+    if (Address.newFromBech32(ownerAddress).isSmartContract()) {
+      throw new UnauthorizedException(
+        'Owner of the contract is a smart contract. Deletion not allowed.',
+      );
+    }
+
+    return ownerAddress;
   }
 
   private async deleteContractVerifier(

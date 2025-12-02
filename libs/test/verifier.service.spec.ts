@@ -240,6 +240,56 @@ describe('VerifierService', () => {
         );
     });
 
+    it('should throw could not determine owner address for owner contract - delete contract verifier', async () => {
+        apiService.get.mockResolvedValueOnce({
+            data: {
+                ownerAddress: 'erd1qqqqqqqqqqqqqpgqxvqq8mdy20eq6u9t09sp2tqt0f6gpyr0d8ss0xgfqz',
+            },
+        });
+
+        apiService.get.mockResolvedValueOnce({
+            data: {},
+        });
+
+        const requestBody = {
+            'signature': '9cf0bfecf402a73c37733e78780bd4ddd3fec7f97831faf91b173a7715ce5822053ac20329fc004272d22e284a10da6f057df5a7783b11cfda1c90163d66b60f',
+            'payload': {
+                'contract': 'erd1qqqqqqqqqqqqqpgqvxzjqasv3jsu5kxtk8ergnqdhuk3vfmnd8ss3hzc3q',
+                'codeHash': '7f7376f37a9f809a1a9b21b60a2a9afe7c9d22ab65807324f537ab3696110a58',
+            },
+        };
+
+        await expect(service.removeContractVerifierSource(requestBody)).rejects.toThrow(
+            new BadRequestException('Could not determine owner address for the contract.')
+        );
+    });
+
+    it('should throw owner of owner contract is smart contract - delete contract verifier', async () => {
+        apiService.get.mockResolvedValueOnce({
+            data: {
+                ownerAddress: 'erd1qqqqqqqqqqqqqpgqxvqq8mdy20eq6u9t09sp2tqt0f6gpyr0d8ss0xgfqz',
+            },
+        });
+
+        apiService.get.mockResolvedValueOnce({
+            data: {
+                ownerAddress: 'erd1qqqqqqqqqqqqqpgqnsfdqlxg7c2nhf3hpqx53qj8uu5jre6dd8ssffmvcd',
+            },
+        });
+
+        const requestBody = {
+            'signature': '9cf0bfecf402a73c37733e78780bd4ddd3fec7f97831faf91b173a7715ce5822053ac20329fc004272d22e284a10da6f057df5a7783b11cfda1c90163d66b60f',
+            'payload': {
+                'contract': 'erd1qqqqqqqqqqqqqpgqvxzjqasv3jsu5kxtk8ergnqdhuk3vfmnd8ss3hzc3q',
+                'codeHash': '7f7376f37a9f809a1a9b21b60a2a9afe7c9d22ab65807324f537ab3696110a58',
+            },
+        };
+
+        await expect(service.removeContractVerifierSource(requestBody)).rejects.toThrow(
+            new BadRequestException('Owner of the contract is a smart contract. Deletion not allowed.')
+        );
+    });
+
     it('should return invalid signature - delete contract verifier', async () => {
         apiService.get.mockResolvedValue({
             data: {
@@ -267,7 +317,7 @@ describe('VerifierService', () => {
 
         apiService.get.mockResolvedValue({
             data: {
-                ownerAddress: 'erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zp6hypefsdd8ssycr6th',
+                ownerAddress: 'erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th',
             },
         });
 
@@ -286,6 +336,78 @@ describe('VerifierService', () => {
         spy.mockRestore();
     });
 
+    it('should throw error if owner is SC and owner of owner is SC - delete contract verifier', async () => {
+        contractVerifierRepository.findOne.mockResolvedValue(verifiedContractMock);
+
+        apiService.get.mockResolvedValueOnce({
+            data: {
+                ownerAddress: 'erd1qqqqqqqqqqqqqpgq9ph6uhdl2hkq7sarxxwycr6txnx0ewcal3ts0cs79w',
+            },
+        });
+        apiService.get.mockResolvedValueOnce({
+            data: {
+                ownerAddress: 'erd1qqqqqqqqqqqqqpgqq75vtleur5rg74nk4f88ql6a7ajas073l3tsc5ljc9',
+            },
+        });
+
+        const requestBody = {
+            'signature': 'd0d16d94bb8c3b391c69d370fd3ca1e1fbf757f68ce543c1ed4ab7fe3c1208731b797342a76aea94b9cabc39ceb4afb7ac5b7e35475c44f52bfd938f1a5c8b0d',
+            'payload': {
+                'contract': 'erd1qqqqqqqqqqqqqpgq8uzcu905yt6xk7k6eg9gnhhxp6gk9swnd8sspla0v4',
+                'codeHash': '7f7376f37a9f809a1a9b21b60a2a9afe7c9d22ab65807324f537ab3696110a58',
+            },
+        };
+
+        await expect(service.removeContractVerifierSource(requestBody)).rejects.toThrow(
+            new UnauthorizedException('Owner of the contract is a smart contract. Deletion not allowed.')
+        );
+    });
+
+    it('should delete contract verifier - owner of owner contract', async () => {
+        const spy = jest.spyOn(service as any, 'checkPayloadSignature').mockImplementation(() => true);
+
+        cacheService.getOrSet.mockImplementation((_key, callback) => {
+            return Promise.resolve(callback());
+        });
+
+        contractVerifierRepository.findOne.mockResolvedValue(verifiedContractMock);
+        contractVerifierRepository.delete.mockResolvedValue(verifiedContractMock);
+
+        apiService.get.mockResolvedValueOnce({
+            data: {
+                ownerAddress: 'erd1qqqqqqqqqqqqqpgq9ph6uhdl2hkq7sarxxwycr6txnx0ewcal3ts0cs79w',
+            },
+        });
+        apiService.get.mockResolvedValueOnce({
+            data: {
+                ownerAddress: 'erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th',
+            },
+        });
+
+        const requestBody = {
+            'signature': '9cf0bfecf402a73c37733e78780bd4ddd3fec7f97831faf91b173a7715ce5822053ac20329fc004272d22e284a10da6f057df5a7783b11cfda1c90163d66b60f',
+            'payload': {
+                'contract': 'erd1qqqqqqqqqqqqqpgqvxzjqasv3jsu5kxtk8ergnqdhuk3vfmnd8ss3hzc3q',
+                'codeHash': '7f7376f37a9f809a1a9b21b60a2a9afe7c9d22ab65807324f537ab3696110a58',
+            },
+        };
+
+        const result = await service.removeContractVerifierSource(requestBody);
+        expect(result).toEqual({
+            address: mockAddress,
+            codeHash: '7f7376f37a9f809a1a9b21b60a2a9afe7c9d22ab65807324f537ab3696110a58',
+            source: {
+                abi: verifiedContractMock.source.abi,
+                contract: verifiedContractMock.source.contract,
+            },
+            status: 'success',
+            ipfsFileHash: 'QmR52Y13ZQbjnETjHsG6hLA7fgidyrWt1JVQDp6Ti1aD7N',
+            dockerImage: 'multiversx/sdk-rust-contract-builder:v10.0.0',
+        });
+
+        spy.mockRestore();
+    });
+
     it('should delete contract verifier', async () => {
         const spy = jest.spyOn(service as any, 'checkPayloadSignature').mockImplementation(() => true);
 
@@ -298,7 +420,7 @@ describe('VerifierService', () => {
 
         apiService.get.mockResolvedValue({
             data: {
-                ownerAddress: 'erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zp6hypefsdd8ssycr6th',
+                ownerAddress: 'erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th',
             },
         });
 

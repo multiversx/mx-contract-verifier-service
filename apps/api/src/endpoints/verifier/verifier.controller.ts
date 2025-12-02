@@ -27,6 +27,26 @@ export class VerifierController {
     description: 'Queues a contract verification task and returns the task ID',
     type: TaskIdResponse,
   })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid docker image',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Source code hash does not match deployed contract',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Contract to be verified does not exist',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Contract build failed',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Failed to upload contract to IPFS',
+  })
   async verify(@Body() validateBody: Verifier): Promise<TaskIdResponse> {
     return await this.taskService.runVerifier(validateBody);
   }
@@ -36,6 +56,18 @@ export class VerifierController {
     status: 200,
     description: 'Queues a contract verification task from an existing verified contract and returns the task ID',
     type: TaskIdResponse,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bytecode changed for existing verified contract',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Source code hash does not match verified contract',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Could not find the contract to verify or the existing verified contract',
   })
   async verifyFromExisting(@Body() validateBody: VerifierFromExisting): Promise<TaskIdResponse> {
     return await this.taskService.runVerifierFromExisting(validateBody);
@@ -119,16 +151,30 @@ export class VerifierController {
   async getContractCodeHash(
     @Param('address', ParseScAddressPipe) address: string,
   ): Promise<VerifierCodeHashResponse> {
-    const data = await this.verifierService.getContractVerifierCodeHash(address);
-
-    return { codeHash: data.codeHash };
+    return await this.verifierService.getContractVerifierCodeHash(address);
   }
 
   @Delete()
   @ApiResponse({
   status: 200,
-  description: 'Contract verifier successfully deleted',
+  description: 'Verified contract successfully deleted',
   type: VerifierDeletionResponse,
+  })
+  @ApiResponse({
+  status: 400,
+  description: 'Could not determine owner address for the contract',
+  })
+  @ApiResponse({
+  status: 401,
+  description: "Unauthorized. Possible reasons: invalid signature or owner of the contract is a smart contract (deletion not allowed)",
+  })
+  @ApiResponse({
+  status: 404,
+  description: 'Verified contract not found for the given address',
+  })
+  @ApiResponse({
+  status: 500,
+  description: 'Failed to delete verified contract',
   })
   async deleteVerifier(@Body() argument: VerifierDeletion): Promise<VerifierDeletionResponse> {
     const response = await this.verifierService.removeContractVerifierSource(argument);
