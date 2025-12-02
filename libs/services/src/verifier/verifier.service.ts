@@ -256,7 +256,7 @@ export class VerifierService {
     status: ContractVerifierStatus,
   ) {
     return await this.contractVerifierRepository.save(contractAddress, {
-      status: status,
+      status,
     });
   }
 
@@ -313,7 +313,10 @@ export class VerifierService {
     return result;
   }
 
-  /** Fetches the owner of the owner contract. If the owner is a smart contract, deletion is not allowed. */
+  /**
+   * Fetches the owner of the contract owner (when the contract owner is itself a smart contract).
+   * If the owner of the contract owner is a smart contract, deletion is not allowed.
+   */
   private async getOwnerOfOwnerContract(address: string): Promise<string> {
     const response = await this.getContractDataFromApi(address);
     const ownerAddress = response?.ownerAddress;
@@ -527,10 +530,10 @@ export class VerifierService {
       `Verifier from existing process started for contract ${validateFromExisting.contract}`,
     );
 
-    const verfiedContract = await this.getContractVerifierModel(
+    const verifiedContract = await this.getContractVerifierModel(
       validateFromExisting.existingVerifiedContract,
     );
-    if (!verfiedContract) {
+    if (!verifiedContract) {
       this.logger.log(
         `No verified contract found for address ${validateFromExisting.existingVerifiedContract}`,
       );
@@ -547,7 +550,7 @@ export class VerifierService {
       'base64',
     ).toString('hex');
 
-    if (verfiedContract.codeHash !== verifiedRemoteCodeHash) {
+    if (verifiedContract.codeHash !== verifiedRemoteCodeHash) {
       this.logger.log(
         `Bytecode changed for existing verified contract ${validateFromExisting.existingVerifiedContract}`,
       );
@@ -562,19 +565,19 @@ export class VerifierService {
       'base64',
     ).toString('hex');
 
-    if (verfiedContract.codeHash !== contractRemoteCodeHash) {
+    if (verifiedContract.codeHash !== contractRemoteCodeHash) {
       this.logger.log(
-        `Source code hashes do not match - existing verified contract: ${verfiedContract.codeHash} - target contract: ${contractRemoteCodeHash}`,
+        `Source code hashes do not match - existing verified contract: ${verifiedContract.codeHash} - target contract: ${contractRemoteCodeHash}`,
       );
       throw new BadRequestException('Source code hash does not match verified contract');
     }
 
     await this.contractVerifierRepository.save(validateFromExisting.contract, {
-      source: verfiedContract.source,
-      codeHash: verfiedContract.codeHash,
-      ipfsFileHash: verfiedContract.ipfsFileHash,
+      source: verifiedContract.source,
+      codeHash: verifiedContract.codeHash,
+      ipfsFileHash: verifiedContract.ipfsFileHash,
       status: ContractVerifierStatus.success,
-      dockerImage: verfiedContract.dockerImage,
+      dockerImage: verifiedContract.dockerImage,
     });
     this.logger.log(
       `Contract verifier from existing saved to database - contract: ${validateFromExisting.contract} - from existing verified contract: ${validateFromExisting.existingVerifiedContract}`,
@@ -582,9 +585,9 @@ export class VerifierService {
 
     return new SuccessfulVerifierResponse({
       address: validateFromExisting.contract,
-      codeHash: verfiedContract.codeHash,
-      ipfsFileHash: verfiedContract.ipfsFileHash,
-      dockerImage: verfiedContract.dockerImage,
+      codeHash: verifiedContract.codeHash,
+      ipfsFileHash: verifiedContract.ipfsFileHash,
+      dockerImage: verifiedContract.dockerImage,
     });
   }
 
@@ -592,25 +595,23 @@ export class VerifierService {
     address: string,
     shouldThrowError: boolean = true,
   ): Promise<any> {
-    let apiResponse;
-
     try {
-      apiResponse = await this.apiService.get(
+      const apiResponse = await this.apiService.get(
         `${this.commonConfigurationService.config.urls.api}/accounts/${address}`,
       );
+      return apiResponse.data;
     } catch (error: any) {
       this.logger.error(
         `Error fetching account data for contract ${address}, error: ${error.message}`,
       );
+
       if (shouldThrowError) {
         throw new InternalServerErrorException(
           `Failed to fetch account data for contract ${address}`,
         );
-      } else {
-        return null;
       }
-    }
 
-    return apiResponse.data;
+      return null;
+    }
   }
 }

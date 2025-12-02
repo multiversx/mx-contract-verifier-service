@@ -278,6 +278,60 @@ describe('VerifierService', () => {
     );
   });
 
+  it('should throw could not determine owner address for owner contract - delete contract verifier', async () => {
+    apiService.get.mockResolvedValueOnce({
+      data: {
+        ownerAddress: 'erd1qqqqqqqqqqqqqpgqxvqq8mdy20eq6u9t09sp2tqt0f6gpyr0d8ss0xgfqz',
+      },
+    });
+
+    apiService.get.mockResolvedValueOnce({
+      data: {},
+    });
+
+    const requestBody = {
+      signature:
+        '9cf0bfecf402a73c37733e78780bd4ddd3fec7f97831faf91b173a7715ce5822053ac20329fc004272d22e284a10da6f057df5a7783b11cfda1c90163d66b60f',
+      payload: {
+        contract: 'erd1qqqqqqqqqqqqqpgqvxzjqasv3jsu5kxtk8ergnqdhuk3vfmnd8ss3hzc3q',
+        codeHash: '7f7376f37a9f809a1a9b21b60a2a9afe7c9d22ab65807324f537ab3696110a58',
+      },
+    };
+
+    await expect(service.removeContractVerifierSource(requestBody)).rejects.toThrow(
+      new BadRequestException('Could not determine owner address for the contract.'),
+    );
+  });
+
+  it('should throw owner of owner contract is smart contract - delete contract verifier', async () => {
+    apiService.get.mockResolvedValueOnce({
+      data: {
+        ownerAddress: 'erd1qqqqqqqqqqqqqpgqxvqq8mdy20eq6u9t09sp2tqt0f6gpyr0d8ss0xgfqz',
+      },
+    });
+
+    apiService.get.mockResolvedValueOnce({
+      data: {
+        ownerAddress: 'erd1qqqqqqqqqqqqqpgqnsfdqlxg7c2nhf3hpqx53qj8uu5jre6dd8ssffmvcd',
+      },
+    });
+
+    const requestBody = {
+      signature:
+        '9cf0bfecf402a73c37733e78780bd4ddd3fec7f97831faf91b173a7715ce5822053ac20329fc004272d22e284a10da6f057df5a7783b11cfda1c90163d66b60f',
+      payload: {
+        contract: 'erd1qqqqqqqqqqqqqpgqvxzjqasv3jsu5kxtk8ergnqdhuk3vfmnd8ss3hzc3q',
+        codeHash: '7f7376f37a9f809a1a9b21b60a2a9afe7c9d22ab65807324f537ab3696110a58',
+      },
+    };
+
+    await expect(service.removeContractVerifierSource(requestBody)).rejects.toThrow(
+      new BadRequestException(
+        'Owner of the contract is a smart contract. Deletion not allowed.',
+      ),
+    );
+  });
+
   it('should return invalid signature - delete contract verifier', async () => {
     apiService.get.mockResolvedValue({
       data: {
