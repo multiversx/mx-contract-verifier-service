@@ -18,7 +18,7 @@ export class VerifierPayload {
   @IsNotEmpty()
   dockerImage: string = '';
 
-  @ApiProperty({ description: 'Source code.' })
+  @ApiProperty({ description: 'The packaged source code.' })
   @IsObject()
   @IsNotEmpty()
   sourceCode: any;

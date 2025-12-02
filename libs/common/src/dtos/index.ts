@@ -8,6 +8,7 @@ export * from './verifier';
 export * from './verifier.deletion';
 export * from './verifier.deletion.payload';
 export * from './verifier.deletion.response';
+export * from './verifier.from.existing';
 export * from './verifier.hash.response';
 export * from './verifier.payload';
 export * from './verifier.response';

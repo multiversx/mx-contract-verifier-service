@@ -36,7 +36,7 @@ export class ContractVerifierRepository {
       .exec();
   }
 
-  /* Find contracts that were verified but the bytecode has changed */
+  /** Find contracts that were verified but the bytecode has changed. */
   async findOutdated(
     projection?: Record<string, number>,
   ): Promise<Partial<ContractVerifier>[]> {

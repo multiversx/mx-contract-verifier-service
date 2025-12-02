@@ -20,6 +20,12 @@ export class VerifierQueueService {
     return await this.worker.workVerifier(job.data.taskId, job.data.data.validate);
   }
 
+  @Process({ name: 'validateFromExisting', concurrency: 1 })
+  async onVerifyFromExistingRequest(job: Job<any>) {
+    this.logger.log({ type: 'consumer', jobId: job.id, identifier: job.data.data.validateFromExisting.contract, attemptsMade: job.attemptsMade });
+    return await this.worker.workVerifierFromExisting(job.data.taskId, job.data.data.validateFromExisting);
+  }
+
   @OnQueueError()
   handleError(error: Error) {
     this.logger.error('Queue error:', error.message);

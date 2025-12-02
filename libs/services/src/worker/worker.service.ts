@@ -3,6 +3,7 @@ import {
   SuccessfulVerifierResponse,
   TaskStatus,
   Verifier,
+  VerifierFromExisting,
 } from '@libs/common';
 import {
   Injectable,
@@ -42,6 +43,32 @@ export class WorkerService {
 
       await this.updateTask(taskId, TaskStatus.error, errorResponse);
       this.logger.error(`Error in workVerifier for task ${taskId}; error: ${error.message}, stack: ${error.stack}`);
+    }
+  }
+
+  async workVerifierFromExisting(taskId: string, validate: VerifierFromExisting): Promise<void> {
+    this.logger.log(`Task ${taskId} - Starting work`);
+
+    try {
+      await this.updateTask(taskId, TaskStatus.started);
+
+      const workResult = await this.verifierService.validateFromExisting(validate);
+
+      await this.updateTask(taskId, TaskStatus.finished, workResult);
+      this.logger.log(`Task ${taskId} - Work completed successfully`);
+    } catch (error: any) {
+      this.logger.error(`Task ${taskId} failed`);
+
+      const errorResponse = {
+        message: error.response?.message || error.message || 'An error occurred',
+        error: error.response?.error || 'Error',
+        statusCode: error.response?.statusCode || 500,
+      };
+
+      await this.updateTask(taskId, TaskStatus.error, errorResponse);
+      console.error(
+        `Error in workVerifierFromExisting for task ${taskId}; error: ${error.message}, stack: ${error.stack}`
+      );
     }
   }
 
