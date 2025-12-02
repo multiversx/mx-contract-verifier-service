@@ -141,6 +141,10 @@ export class VerifierController {
   description: 'Could not determine the owner of the contract',
   })
   @ApiResponse({
+  status: 401,
+  description: "Unauthorized. Possible reasons: invalid signature or owner of the contract is a smart contract (deletion not allowed).",
+  })
+  @ApiResponse({
   status: 404,
   description: 'Verified contract not found for the given address',
   })

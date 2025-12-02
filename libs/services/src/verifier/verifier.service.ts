@@ -310,14 +310,17 @@ export class VerifierService {
     return result;
   }
 
-  /** Fetches the owner of the owner contract. If the owner is a smart contract, deletion is not allowed. */
+  /**
+   * Fetches the owner of the contract owner (when the contract owner is itself a smart contract).
+   * If the owner of the contract owner is a smart contract, deletion is not allowed.
+   */
   private async getOwnerOfOwnerContract(address: string): Promise<string> {
     const response = await this.getContractDataFromApi(address);
     const ownerAddress = response?.ownerAddress;
     if (!ownerAddress) {
       this.logger.error(`No owner address for contract ${address}`);
       throw new BadRequestException(
-        'Could not determine owner address for the contract.',
+        'Could not determine owner address for the owner contract.',
       );
     }
 
