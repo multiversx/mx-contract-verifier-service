@@ -13,7 +13,7 @@ export class PubSubListenerModule {
       imports: [
         LoggingModule,
         CommonConfigModule,
-        QueueWorkerModule
+        QueueWorkerModule,
       ],
       controllers: [PubSubListenerController],
       providers: [DynamicModuleUtils.getPubSubService()],
