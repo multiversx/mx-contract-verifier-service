@@ -8,32 +8,29 @@ dotenv.config({
   path: resolve(process.cwd(), envPath),
 });
 
-import 'module-alias/register';
-import { NestFactory } from '@nestjs/core';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { readFileSync } from 'fs';
-import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
-import { join } from 'path';
-import { PrivateAppModule } from './private.app.module';
-import { PublicAppModule } from './public.app.module';
-import * as bodyParser from 'body-parser';
-import { Logger, NestInterceptor, ValidationPipe } from '@nestjs/common';
-import { MicroserviceOptions, Transport } from '@nestjs/microservices';
-import cookieParser from 'cookie-parser';
-import { PubSubListenerModule } from '@libs/common';
+import { LoggerInitializer } from '@multiversx/sdk-nestjs-common';
 import {
   LoggingInterceptor,
   MetricsService,
   RequestCpuTimeInterceptor,
 } from '@multiversx/sdk-nestjs-monitoring';
-import { LoggerInitializer } from '@multiversx/sdk-nestjs-common';
+import { Logger, NestInterceptor, ValidationPipe } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import * as bodyParser from 'body-parser';
+import cookieParser from 'cookie-parser';
+import { readFileSync } from 'fs';
+import 'module-alias/register';
+import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
+import { join } from 'path';
+import { PrivateAppModule } from './private.app.module';
+import { PublicAppModule } from './public.app.module';
 
 import '@multiversx/sdk-nestjs-common/lib/utils/extensions/array.extensions';
 import '@multiversx/sdk-nestjs-common/lib/utils/extensions/date.extensions';
 import '@multiversx/sdk-nestjs-common/lib/utils/extensions/number.extensions';
 import '@multiversx/sdk-nestjs-common/lib/utils/extensions/string.extensions';
 import { AppConfigService } from './config/app-config.service';
-import { CommonConfigService } from '@libs/common/config/common.config.service';
 
 async function bootstrap() {
   const publicApp = await NestFactory.create(PublicAppModule);
@@ -45,7 +42,6 @@ async function bootstrap() {
   const privateApp = await NestFactory.create(PrivateAppModule);
 
   const appConfigService = publicApp.get<AppConfigService>(AppConfigService);
-  const commonConfigService = publicApp.get<CommonConfigService>(CommonConfigService);
   const metricsService = privateApp.get<MetricsService>(MetricsService);
 
   const globalInterceptors: NestInterceptor[] = [];
@@ -74,23 +70,6 @@ async function bootstrap() {
   const logger = new Logger('Bootstrapper');
 
   LoggerInitializer.initialize(logger);
-
-  const pubSubApp = await NestFactory.createMicroservice<MicroserviceOptions>(
-    PubSubListenerModule.forRoot(),
-    {
-      transport: Transport.REDIS,
-      options: {
-        host: commonConfigService.config.redis.host,
-        port: commonConfigService.config.redis.port,
-        retryAttempts: 100,
-        retryDelay: 1000,
-        retryStrategy: () => 1000,
-      },
-    },
-  );
-  pubSubApp.useLogger(pubSubApp.get(WINSTON_MODULE_NEST_PROVIDER));
-  // eslint-disable-next-line @typescript-eslint/no-floating-promises
-  pubSubApp.listen();
 
   logger.log(`Public API active: ${appConfigService.config.port}`);
   logger.log(`Private API active: ${appConfigService.config.privatePort}`);
