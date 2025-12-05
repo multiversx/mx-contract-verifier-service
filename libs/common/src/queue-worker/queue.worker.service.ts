@@ -4,15 +4,18 @@ import { Queue } from 'bull';
 import { Verifier, VerifierFromExisting } from '../dtos';
 
 @Injectable()
-export class WorkerService {
+export class QueueWorkerService {
   private readonly logger: Logger;
 
-  constructor(@InjectQueue('verifierQueue') private verifierQueue: Queue) {
-    this.logger = new Logger(WorkerService.name);
+  constructor(
+    @InjectQueue('validateQueue') private validateQueue: Queue,
+    @InjectQueue('validateFromExistingQueue') private validateFromExistingQueue: Queue,
+  ) {
+    this.logger = new Logger(QueueWorkerService.name);
   }
 
-  async addVerifierJobIntoQueue(type: string, taskId: string, data: Verifier) {
-    const job = await this.verifierQueue.add(
+  async addValidateJobIntoQueue(type: string, taskId: string, data: Verifier) {
+    const job = await this.validateQueue.add(
       type,
       { taskId, data },
       {
@@ -27,12 +30,12 @@ export class WorkerService {
     });
   }
 
-  async addVerifierFromExistingJobIntoQueue(
+  async addValidateFromExistingJobIntoQueue(
     type: string,
     taskId: string,
     data: VerifierFromExisting,
   ) {
-    const job = await this.verifierQueue.add(
+    const job = await this.validateFromExistingQueue.add(
       type,
       { taskId, data },
       {

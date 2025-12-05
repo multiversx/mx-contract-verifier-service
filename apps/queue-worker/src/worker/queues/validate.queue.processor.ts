@@ -3,12 +3,12 @@ import { OnQueueError, OnQueueFailed, Process, Processor } from '@nestjs/bull';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bull';
 
-@Processor('verifierQueue')
-export class VerifierQueueService {
+@Processor('validateQueue')
+export class ValidateQueueProcessor {
   private readonly logger: Logger;
 
   constructor(private readonly worker: WorkerService) {
-    this.logger = new Logger(VerifierQueueService.name);
+    this.logger = new Logger(ValidateQueueProcessor.name);
   }
 
   @Process({ name: 'validate', concurrency: 1 })
@@ -20,20 +20,6 @@ export class VerifierQueueService {
       attemptsMade: job.attemptsMade,
     });
     return await this.worker.workVerifier(job.data.taskId, job.data.data.validate);
-  }
-
-  @Process({ name: 'validateFromExisting', concurrency: 1 })
-  async onVerifyFromExistingRequest(job: Job<any>) {
-    this.logger.log({
-      type: 'consumer',
-      jobId: job.id,
-      identifier: job.data.data.validateFromExisting.contract,
-      attemptsMade: job.attemptsMade,
-    });
-    return await this.worker.workVerifierFromExisting(
-      job.data.taskId,
-      job.data.data.validateFromExisting,
-    );
   }
 
   @OnQueueError()

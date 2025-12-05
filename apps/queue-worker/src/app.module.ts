@@ -3,14 +3,15 @@ import {
   ApiMetricsModule,
   CommonConfigModule,
   HealthCheckController,
-  PubSubListenerModule,
 } from '@libs/common';
+import { PubSubListenerModule } from '@libs/common/pubsub/pub.sub.listener.module';
 import { ServicesModule } from '@libs/services';
 import { LoggingModule } from '@multiversx/sdk-nestjs-common';
 import { Module } from '@nestjs/common';
 import { AppConfigModule } from './config/app-config.module';
 import { BullQueueModule } from './worker/bull.queue.module';
-import { VerifierQueueService } from './worker/queues/verifier.queue.service';
+import { ValidateFromExistingQueueProcessor } from './worker/queues/validate.from.existing.processor';
+import { ValidateQueueProcessor } from './worker/queues/validate.queue.processor';
 
 @Module({
   imports: [
@@ -20,9 +21,9 @@ import { VerifierQueueService } from './worker/queues/verifier.queue.service';
     CommonConfigModule,
     BullQueueModule,
     ServicesModule,
-    PubSubListenerModule.forRoot({ enableConsumer: true }),
+    PubSubListenerModule.forRoot(),
   ],
-  providers: [VerifierQueueService],
+  providers: [ValidateQueueProcessor, ValidateFromExistingQueueProcessor],
   controllers: [ApiMetricsController, HealthCheckController],
 })
 export class AppModule {}

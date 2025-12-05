@@ -24,7 +24,7 @@ async function bootstrap() {
   await app.listen(appConfigService.config.port);
 
   const pubSubApp = await NestFactory.createMicroservice<MicroserviceOptions>(
-    PubSubListenerModule.forRoot({ enableConsumer: true }),
+    PubSubListenerModule.forRoot(),
     {
       transport: Transport.REDIS,
       options: {
