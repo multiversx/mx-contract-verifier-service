@@ -12,7 +12,7 @@ export class ValidateQueueProcessor {
   }
 
   @Process({ name: 'validate', concurrency: 1 })
-  async onVerifyRequest(job: Job<any>) {
+  async onValidateRequest(job: Job<any>) {
     this.logger.log({
       type: 'consumer',
       jobId: job.id,
