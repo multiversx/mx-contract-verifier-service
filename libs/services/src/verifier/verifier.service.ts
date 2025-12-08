@@ -530,6 +530,24 @@ export class VerifierService {
       `Verifier from existing process started for contract ${validateFromExisting.contract}`,
     );
 
+    const contract = await this.getContractVerifierModel(validateFromExisting.contract);
+    if (contract) {
+      const apiData = await this.getContractDataFromApi(validateFromExisting.contract);
+      const remoteCodeHash = Buffer.from(apiData?.codeHash, 'base64').toString('hex');
+
+      if (contract.codeHash === remoteCodeHash) {
+        this.logger.log(
+          `Contract ${contract.address} already verified and codeHash did not change`,
+        );
+        return new SuccessfulVerifierResponse({
+          address: contract.address,
+          codeHash: contract.codeHash,
+          ipfsFileHash: contract.ipfsFileHash,
+          dockerImage: contract.dockerImage,
+        });
+      }
+    }
+
     const verifiedContract = await this.getContractVerifierModel(
       validateFromExisting.existingVerifiedContract,
     );

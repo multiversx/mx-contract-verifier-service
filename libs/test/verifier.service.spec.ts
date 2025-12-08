@@ -644,6 +644,77 @@ describe('VerifierService', () => {
     });
   });
 
+  it('should validate from existing contract - existing already verified', async () => {
+    cacheService.getOrSet.mockImplementation((_key, callback) => {
+      return Promise.resolve(callback());
+    });
+
+    const contract = {
+      ...verifiedContractMock,
+      address: validateFromExistingMock.contract,
+    };
+    contractVerifierRepository.findOne.mockResolvedValue(contract);
+
+    apiService.get.mockResolvedValue({
+      data: {
+        codeHash: Buffer.from(
+          '7f7376f37a9f809a1a9b21b60a2a9afe7c9d22ab65807324f537ab3696110a58',
+          'hex',
+        ).toString('base64'),
+      },
+    });
+
+    const result = await service.validateFromExisting(validateFromExistingMock);
+    expect(result).toEqual({
+      address: validateFromExistingMock.contract,
+      codeHash: mockCodeHash,
+      ipfsFileHash: pinataHash,
+      dockerImage: dockerImage,
+    });
+  });
+
+  it('should validate from existing contract - existing already verified, bytecode changed', async () => {
+    cacheService.getOrSet.mockImplementation((_key, callback) => {
+      return Promise.resolve(callback());
+    });
+
+    const contract = {
+      ...verifiedContractMock,
+      address: validateFromExistingMock.contract,
+    };
+    contractVerifierRepository.findOne.mockResolvedValueOnce(contract);
+    contractVerifierRepository.findOne.mockResolvedValueOnce(verifiedContractMock);
+
+
+    apiService.get.mockResolvedValueOnce({
+      data: {
+        codeHash: Buffer.from(
+          '0c51a67e88488825fc570e2bcb741f1f1e1d2c36b6f563980eda6f2a1b67c725',
+          'hex',
+        ).toString('base64'),
+      },
+    });
+
+    apiService.get.mockResolvedValue({
+      data: {
+        codeHash: Buffer.from(
+          '7f7376f37a9f809a1a9b21b60a2a9afe7c9d22ab65807324f537ab3696110a58',
+          'hex',
+        ).toString('base64'),
+      },
+    });
+
+    contractVerifierRepository.save.mockResolvedValue();
+
+    const result = await service.validateFromExisting(validateFromExistingMock);
+    expect(result).toEqual({
+      address: validateFromExistingMock.contract,
+      codeHash: mockCodeHash,
+      ipfsFileHash: pinataHash,
+      dockerImage: dockerImage,
+    });
+  });
+
   it('should validate from existing contract - existing not found', async () => {
     contractVerifierRepository.findOne.mockResolvedValue(null);
 
@@ -677,6 +748,7 @@ describe('VerifierService', () => {
     cacheService.getOrSet.mockImplementation((_key, callback) => {
       return Promise.resolve(callback());
     });
+    contractVerifierRepository.findOne.mockResolvedValueOnce(null);
     contractVerifierRepository.findOne.mockResolvedValue(verifiedContractMock);
     apiService.get.mockResolvedValueOnce({
       data: {
@@ -701,17 +773,16 @@ describe('VerifierService', () => {
     cacheService.getOrSet.mockImplementation((_key, callback) => {
       return Promise.resolve(callback());
     });
+
+    contractVerifierRepository.findOne.mockResolvedValueOnce(null);
     contractVerifierRepository.findOne.mockResolvedValue(verifiedContractMock);
-    apiService.get.mockResolvedValueOnce({
+
+    apiService.get.mockResolvedValue({
       data: {
         codeHash: Buffer.from(mockCodeHash, 'hex').toString('base64'),
       },
     });
-    apiService.get.mockResolvedValueOnce({
-      data: {
-        codeHash: Buffer.from(mockCodeHash, 'hex').toString('base64'),
-      },
-    });
+
     contractVerifierRepository.save.mockResolvedValue();
 
     const result = await service.validateFromExisting(validateFromExistingMock);
