@@ -1,14 +1,17 @@
 import { BullModule } from '@nestjs/bull';
 import { Module } from '@nestjs/common';
-import { WorkerService } from './worker.service';
+import { QueueWorkerService } from './queue.worker.service';
 
 @Module({
   imports: [
     BullModule.registerQueue({
-      name: 'verifierQueue',
+      name: 'validateQueue',
+    }),
+    BullModule.registerQueue({
+      name: 'validateFromExistingQueue',
     }),
   ],
-  providers: [WorkerService],
-  exports: [WorkerService, BullModule],
+  providers: [QueueWorkerService],
+  exports: [QueueWorkerService],
 })
 export class QueueWorkerModule {}

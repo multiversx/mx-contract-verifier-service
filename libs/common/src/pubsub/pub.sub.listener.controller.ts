@@ -1,12 +1,12 @@
 import { Controller, Logger } from '@nestjs/common';
 import { EventPattern } from '@nestjs/microservices';
-import { WorkerService } from '../queue-worker';
+import { QueueWorkerService } from '../queue-worker';
 
 @Controller()
 export class PubSubListenerController {
   private logger: Logger;
 
-  constructor(private readonly workerService: WorkerService) {
+  constructor(private readonly workerService: QueueWorkerService) {
     this.logger = new Logger(PubSubListenerController.name);
   }
 
@@ -28,7 +28,7 @@ export class PubSubListenerController {
       contract: value.validate.payload.contract,
       environment,
     });
-    await this.workerService.addVerifierJobIntoQueue(type, taskId, value);
+    await this.workerService.addValidateJobIntoQueue(type, taskId, value);
   }
 
   @EventPattern('validateFromExisting')
@@ -49,6 +49,6 @@ export class PubSubListenerController {
       contract: value.validateFromExisting.contract,
       environment,
     });
-    await this.workerService.addVerifierFromExistingJobIntoQueue(type, taskId, value);
+    await this.workerService.addValidateFromExistingJobIntoQueue(type, taskId, value);
   }
 }
