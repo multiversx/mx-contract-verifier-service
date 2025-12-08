@@ -664,8 +664,6 @@ describe('VerifierService', () => {
       },
     });
 
-    contractVerifierRepository.save.mockResolvedValue();
-
     const result = await service.validateFromExisting(validateFromExistingMock);
     expect(result).toEqual({
       address: validateFromExistingMock.contract,
@@ -684,7 +682,9 @@ describe('VerifierService', () => {
       ...verifiedContractMock,
       address: validateFromExistingMock.contract,
     };
-    contractVerifierRepository.findOne.mockResolvedValue(contract);
+    contractVerifierRepository.findOne.mockResolvedValueOnce(contract);
+    contractVerifierRepository.findOne.mockResolvedValueOnce(verifiedContractMock);
+
 
     apiService.get.mockResolvedValueOnce({
       data: {
