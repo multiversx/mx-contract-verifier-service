@@ -235,7 +235,7 @@ export class VerifierService {
     const chunkSize = 100;
     const numRequests = Math.ceil(contracts.length / chunkSize);
 
-    let contractsInfo: Record<string, any> = {};
+    const contractsInfo: Record<string, any> = {};
 
     let start = 0;
     for (let i = 0; i < numRequests; i++) {
