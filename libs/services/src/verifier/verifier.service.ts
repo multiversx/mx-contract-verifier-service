@@ -226,23 +226,42 @@ export class VerifierService {
     return result;
   }
 
+  /** This method is only called in the cache-warmer once in a while to make sure no outdated contracts are presented as verified. */
   public async changeContractStatusIfByteCodeChanged(): Promise<void> {
     const verifiedContracts = await this.getVerifiedContractsAndCodeHashes();
 
+    const contracts = verifiedContracts.map((contract) => contract.address);
+
+    const chunkSize = 100;
+    const numRequests = Math.ceil(contracts.length / chunkSize);
+
+    let contractsInfo: Record<string, any> = {};
+
+    let start = 0;
+    for (let i = 0; i < numRequests; i++) {
+      const info = await this.getBulkContractsData(
+        contracts.slice(start, start + chunkSize),
+      );
+      Object.assign(contractsInfo, info);
+      start += chunkSize;
+    }
+
     for (const contract of verifiedContracts) {
-      const apiResponse = await this.getContractDataFromApi(contract.address, false);
-      const remoteCodeHash: string | undefined = apiResponse?.codeHash;
-      if (!remoteCodeHash) {
-        this.logger.log(`No remote code hash for contract ${contract.address}`);
+      const info = contractsInfo[contract.address];
+
+      if (!info) {
+        this.logger.log(`No info for ${contract.address}`);
         continue;
       }
 
-      const hexRemoteCodeHash = Buffer.from(remoteCodeHash, 'base64').toString('hex');
+      if (!info.codeHash) {
+        this.logger.log(`No codeHash for ${contract.address}`);
+        continue;
+      }
 
-      if (contract.codeHash !== hexRemoteCodeHash) {
-        this.logger.log(
-          `Changing status for verified contract ${contract.address} as bytecode changed`,
-        );
+      const remoteCodeHash = Buffer.from(info.codeHash, 'base64').toString('hex');
+      if (contract.codeHash !== remoteCodeHash) {
+        this.logger.log(`Status changed for ${contract.address}`);
         await this.changeContractVerifierStatusTo(
           contract.address,
           ContractVerifierStatus.byteCodeChangedSinceLastVerification,
@@ -628,6 +647,20 @@ export class VerifierService {
           `Failed to fetch account data for contract ${address}`,
         );
       }
+
+      return null;
+    }
+  }
+
+  private async getBulkContractsData(contracts: string[]): Promise<any> {
+    try {
+      const response = await this.apiService.post(
+        `${this.commonConfigurationService.config.urls.gateway}/address/bulk`,
+        contracts,
+      );
+      return response.data.data.accounts;
+    } catch (error: any) {
+      this.logger.error(`Error fetching contracts, error: ${error.message}`);
 
       return null;
     }
