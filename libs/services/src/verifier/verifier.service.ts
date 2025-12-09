@@ -314,6 +314,8 @@ export class VerifierService {
     const contractAddress = body.payload.contract;
     let result: ContractVerifierModel | undefined;
 
+    this.cacheService.delete(CacheInfo.VerifiedContractModel(contractAddress).key);
+
     try {
       result = await this.deleteContractVerifier(contractAddress);
     } catch (error) {
@@ -358,7 +360,7 @@ export class VerifierService {
   private async deleteContractVerifier(
     address: string,
   ): Promise<ContractVerifierModel | undefined> {
-    const verifier = await this.getContractVerifierModel(address);
+    const verifier = await this.getContractVerifierModelFromDb(address);
     if (!verifier) {
       return undefined;
     }
