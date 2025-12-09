@@ -307,7 +307,7 @@ export class VerifierService {
       ownerAddress = await this.getOwnerOfOwnerContract(ownerAddress);
     }
 
-    if (! await this.checkPayloadSignature(body.signature, body.payload, ownerAddress)) {
+    if (!(await this.checkPayloadSignature(body.signature, body.payload, ownerAddress))) {
       throw new UnauthorizedException('Invalid signature');
     }
 
@@ -389,7 +389,10 @@ export class VerifierService {
     const messageComputer = new MessageComputer();
     const verifyBytes = messageComputer.computeBytesForVerifying(signableMessage);
 
-    const secondVerificationResult = await verifier.verify(verifyBytes, signatureAsBuffer);
+    const secondVerificationResult = await verifier.verify(
+      verifyBytes,
+      signatureAsBuffer,
+    );
 
     return firstVerificationResult || secondVerificationResult;
   }
