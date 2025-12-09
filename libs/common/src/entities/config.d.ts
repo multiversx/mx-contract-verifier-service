@@ -13,16 +13,18 @@ export interface Config {
     queueWorker: {
       port: number;
     };
-    transactionsProcessor: {
-      port: number;
-      maxLookBehind: number;
-    };
   };
   libs: {
     common: {
+      pinata: {
+        pinataUrl: string;
+        pinataJwt: string;
+        fileStorageCdnUrl: string;
+      };
       network: "devnet" | "testnet" | "mainnet";
       urls: {
         api: string;
+        gateway: string;
       };
       database: {
         host: string;
@@ -35,10 +37,6 @@ export interface Config {
       redis: {
         host: string;
         port: number;
-      };
-      nativeAuth: {
-        maxExpirySeconds: number;
-        acceptedOrigins: string[];
       };
       security: {
         admins: string[];

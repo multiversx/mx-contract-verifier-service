@@ -1,5 +1,5 @@
-import { configuration } from "@libs/common/config/configuration";
-import { Injectable } from "@nestjs/common";
+import { configuration } from '@libs/common/config/configuration';
+import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class AppConfigService {

@@ -8,8 +8,8 @@ REST API facade template for microservices that interacts with the MultiversX bl
 ## Dependencies
 
 1. Redis Server is required to be installed [docs](https://redis.io/).
-2. MySQL Server is required to be installed [docs](https://dev.mysql.com/doc/refman/8.0/en/installing.html).
-3. MongoDB Server is required to be installed [docs](https://docs.mongodb.com/).
+2. MongoDB Server is required to be installed [docs](https://docs.mongodb.com/).
+3. Docker is required to be installed on the machine.
 
 You can run `docker-compose up` (or `docker-compose up -d` as detached) in a separate terminal to use a local Docker container for all these dependencies.
 
@@ -29,10 +29,6 @@ For example: We do not want to expose our metrics and cache interactions to anyo
 ### `Cache Warmer`
 
 This is used to keep the application cache in sync with new updates.
-
-### `Transaction Processor`
-
-This is used for scanning the transactions from MultiversX Blockchain.
 
 ### `Queue Worker`
 
@@ -88,7 +84,7 @@ In order to simplify the scripts, the templates will use the following environme
 ### `npm run start`
 
 Runs the app in the production mode.
-Make requests to [http://localhost:3001](http://localhost:3001).
+Make requests to [http://localhost:3000](http://localhost:3000).
 
 Redis Server is required to be installed.
 
@@ -114,28 +110,6 @@ $ NODE_ENV=devnet npm run start:api
 $ NODE_ENV=mainnet NODE_APP=api npm run start
 or
 $ NODE_ENV=mainnet npm run start:api
-```
-
-## Running the transactions-processor
-
-```bash
-# development watch mode on devnet
-$ NODE_ENV=devnet NODE_APP=transactions-processor NODE_WATCH=true npm run start
-or
-$ NODE_ENV=devnet NODE_WATCH=true npm run start:transactions-processor
-
-# development debug mode on devnet
-$ NODE_ENV=devnet NODE_APP=transactions-processor NODE_DEBUG=true npm run start
-or
-$ NODE_ENV=devnet NODE_DEBUG=true npm run start:transactions-processor
-
-# development mode on devnet
-$ NODE_ENV=devnet NODE_APP=transactions-processor npm run start
-or
-$ NODE_ENV=devnet npm run start:transactions-processor
-
-# production mode
-$ NODE_ENV=mainnet npm run start:transactions-processor
 ```
 
 ## Running the queue-worker

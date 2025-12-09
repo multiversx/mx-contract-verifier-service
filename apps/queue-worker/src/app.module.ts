@@ -1,12 +1,17 @@
-import { Module } from '@nestjs/common';
-import { ApiMetricsController, CommonConfigModule, HealthCheckController } from '@libs/common';
-import { ApiMetricsModule } from '@libs/common';
+import {
+  ApiMetricsController,
+  ApiMetricsModule,
+  CommonConfigModule,
+  HealthCheckController,
+} from '@libs/common';
+import { PubSubListenerModule } from '@libs/common/pubsub/pub.sub.listener.module';
+import { ServicesModule } from '@libs/services';
 import { LoggingModule } from '@multiversx/sdk-nestjs-common';
+import { Module } from '@nestjs/common';
 import { AppConfigModule } from './config/app-config.module';
-import { ExampleQueueService } from './worker/queues/example.queue.service';
-import { BullModule } from '@nestjs/bull';
 import { BullQueueModule } from './worker/bull.queue.module';
-import { WorkerService } from './worker/worker.service';
+import { ValidateFromExistingQueueProcessor } from './worker/queues/validate.from.existing.processor';
+import { ValidateQueueProcessor } from './worker/queues/validate.queue.processor';
 
 @Module({
   imports: [
@@ -15,17 +20,10 @@ import { WorkerService } from './worker/worker.service';
     AppConfigModule,
     CommonConfigModule,
     BullQueueModule,
-    BullModule.registerQueue({
-      name: 'exampleQueue',
-    }),
+    ServicesModule,
+    PubSubListenerModule.forRoot(),
   ],
-  providers: [
-    WorkerService,
-    ExampleQueueService,
-  ],
-  controllers: [
-    ApiMetricsController,
-    HealthCheckController,
-  ],
+  providers: [ValidateQueueProcessor, ValidateFromExistingQueueProcessor],
+  controllers: [ApiMetricsController, HealthCheckController],
 })
-export class AppModule { }
+export class AppModule {}

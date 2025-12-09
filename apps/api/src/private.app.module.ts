@@ -1,8 +1,12 @@
-import { Module } from '@nestjs/common';
-import { ApiMetricsController, HealthCheckController } from '@libs/common';
-import { ApiMetricsModule, DynamicModuleUtils } from '@libs/common';
-import { LoggingModule } from '@multiversx/sdk-nestjs-common';
+import {
+  ApiMetricsController,
+  ApiMetricsModule,
+  DynamicModuleUtils,
+  HealthCheckController,
+} from '@libs/common';
 import { CommonConfigModule } from '@libs/common/config/common.config.module';
+import { LoggingModule } from '@multiversx/sdk-nestjs-common';
+import { Module } from '@nestjs/common';
 import { AppConfigModule } from './config/app-config.module';
 
 @Module({
@@ -13,13 +17,7 @@ import { AppConfigModule } from './config/app-config.module';
     CommonConfigModule,
     AppConfigModule,
   ],
-  providers: [
-    DynamicModuleUtils.getNestJsApiConfigService(),
-    DynamicModuleUtils.getPubSubService(),
-  ],
-  controllers: [
-    ApiMetricsController,
-    HealthCheckController,
-  ],
+  providers: [DynamicModuleUtils.getNestJsApiConfigService()],
+  controllers: [ApiMetricsController, HealthCheckController],
 })
-export class PrivateAppModule { }
+export class PrivateAppModule {}

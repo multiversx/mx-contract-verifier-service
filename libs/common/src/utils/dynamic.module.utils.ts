@@ -1,20 +1,29 @@
-import { ERDNEST_CONFIG_SERVICE } from "@multiversx/sdk-nestjs-common";
-import { CacheModule, RedisCacheModuleOptions } from "@multiversx/sdk-nestjs-cache";
-import { DynamicModule, Provider } from "@nestjs/common";
-import { ClientOptions, ClientProxyFactory, Transport } from "@nestjs/microservices";
-import { CommonConfigModule, CommonConfigService, SdkNestjsConfigServiceImpl } from "../config";
+import { CacheModule, RedisCacheModuleOptions } from '@multiversx/sdk-nestjs-cache';
+import { ERDNEST_CONFIG_SERVICE } from '@multiversx/sdk-nestjs-common';
+import { ApiModule, ApiModuleOptions } from '@multiversx/sdk-nestjs-http';
+import { DynamicModule, Provider } from '@nestjs/common';
+import { ClientOptions, ClientProxyFactory, Transport } from '@nestjs/microservices';
+import {
+  CommonConfigModule,
+  CommonConfigService,
+  SdkNestjsConfigServiceImpl,
+} from '../config';
 
 export class DynamicModuleUtils {
   static getCachingModule(): DynamicModule {
     return CacheModule.forRootAsync({
       imports: [CommonConfigModule],
-      useFactory: (configService: CommonConfigService) => new RedisCacheModuleOptions({
-        host: configService.config.redis.host,
-        port: configService.config.redis.port,
-      }, {
-        poolLimit: 100,
-        processTtl: 60,
-      }),
+      useFactory: (configService: CommonConfigService) =>
+        new RedisCacheModuleOptions(
+          {
+            host: configService.config.redis.host,
+            port: configService.config.redis.port,
+          },
+          {
+            poolLimit: 100,
+            processTtl: 60,
+          },
+        ),
       inject: [CommonConfigService],
     });
   }
@@ -45,5 +54,19 @@ export class DynamicModuleUtils {
       },
       inject: [CommonConfigService],
     };
+  }
+
+  static getApiModule(): DynamicModule {
+    return ApiModule.forRootAsync({
+      imports: [CommonConfigModule],
+      useFactory: (commonConfigService: CommonConfigService) =>
+        new ApiModuleOptions({
+          axiosTimeout: 61000,
+          rateLimiterSecret: commonConfigService.config.rateLimiterSecret,
+          serverTimeout: 60000,
+          useKeepAliveAgent: true,
+        }),
+      inject: [CommonConfigService],
+    });
   }
 }

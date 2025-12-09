@@ -7,11 +7,12 @@ apps:
     port: 4001
   queueWorker:
     port: 4002
-  transactionsProcessor:
-    port: 4003
-    maxLookBehind: 100
 libs:
   common:
+    pinata:
+      pinataUrl: ${PINATA_URL}
+      pinataJwt: ${PINATA_JWT}
+      fileStorageCdnUrl: ${FILE_STORAGE_CDN_URL}
     network: ${NETWORK}
     urls:
       api: ${API_URL}
@@ -25,10 +26,6 @@ libs:
     redis:
       host: '127.0.0.1'
       port: 6379
-    nativeAuth:
-      # maxExpirySeconds:
-      acceptedOrigins:
-        - utils.multiversx.com
     security:
       admins: []
     # rateLimiterSecret:

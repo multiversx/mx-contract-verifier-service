@@ -1,8 +1,9 @@
-import { DynamicModule, Module } from '@nestjs/common';
-import { PubSubListenerController } from './pub.sub.listener.controller';
 import { LoggingModule } from '@multiversx/sdk-nestjs-common';
+import { DynamicModule, Module } from '@nestjs/common';
 import { CommonConfigModule } from '../config';
+import { QueueWorkerModule } from '../queue-worker';
 import { DynamicModuleUtils } from '../utils';
+import { PubSubListenerController } from './pub.sub.listener.controller';
 
 @Module({})
 export class PubSubListenerModule {
@@ -12,14 +13,10 @@ export class PubSubListenerModule {
       imports: [
         LoggingModule,
         CommonConfigModule,
-        DynamicModuleUtils.getCachingModule(),
+        QueueWorkerModule,
       ],
-      controllers: [
-        PubSubListenerController,
-      ],
-      providers: [
-        DynamicModuleUtils.getPubSubService(),
-      ],
+      controllers: [PubSubListenerController],
+      providers: [DynamicModuleUtils.getPubSubService()],
       exports: ['PUBSUB_SERVICE'],
     };
   }

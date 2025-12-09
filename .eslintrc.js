@@ -103,8 +103,8 @@ module.exports = {
         },
         {
           from: 'libs/common',
-          allow: ['libs/entities']
-        }
+          allow: ['libs/entities', 'libs/services', 'apps/queue-worker']
+        },
       ]
     }],
     'boundaries/no-unknown': [2],
@@ -144,6 +144,13 @@ module.exports = {
           "patterns": ["@libs/services*"]
         }]
       }
-    }
+    },
+    {
+    "files": ["**/*.spec.ts", "**/*.mock.ts", "libs/test/**/*.ts"],
+    "rules": {
+      "boundaries/no-unknown-files": "off",
+      "boundaries/no-unknown": "off"
+    },
+  }
   ]
 };

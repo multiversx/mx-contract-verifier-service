@@ -1,14 +1,12 @@
-import { MetricsService } from "@multiversx/sdk-nestjs-monitoring";
-import { Injectable } from "@nestjs/common";
+import { MetricsService } from '@multiversx/sdk-nestjs-monitoring';
+import { Injectable } from '@nestjs/common';
 import { register, Gauge } from 'prom-client';
 
 @Injectable()
 export class ApiMetricsService {
   private static lastProcessedNonceGauge: Gauge<string>;
 
-  constructor(
-    private readonly metricsService: MetricsService,
-  ) {
+  constructor(private readonly metricsService: MetricsService) {
     if (!ApiMetricsService.lastProcessedNonceGauge) {
       ApiMetricsService.lastProcessedNonceGauge = new Gauge({
         name: 'last_processed_nonce',

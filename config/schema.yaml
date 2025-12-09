@@ -8,16 +8,18 @@ apps:
     port: integer
   queueWorker:
     port: integer
-  transactionsProcessor:
-    port: integer
-    maxLookBehind: integer
 libs:
   common:
+    pinata:
+      pinataUrl: string
+      pinataJwt: string
+      fileStorageCdnUrl: string
     network:
       type: string
       enum: [devnet, testnet, mainnet]
     urls:
       api: string
+      gateway: string
     database:
       host: string
       port: integer
@@ -34,13 +36,6 @@ libs:
     redis:
       host: string
       port: integer
-    nativeAuth:
-      maxExpirySeconds:
-        type: integer
-        default: 86400
-      acceptedOrigins:
-        type: array
-        items: string
     security:
       admins:
         type: array

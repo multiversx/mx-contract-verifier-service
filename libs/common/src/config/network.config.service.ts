@@ -1,5 +1,5 @@
-import { Injectable } from "@nestjs/common";
-import { configuration } from "./configuration";
+import { Injectable } from '@nestjs/common';
+import { configuration } from './configuration';
 
 export interface NetworkConfig {
   chainID: 'D' | 'T' | '1';

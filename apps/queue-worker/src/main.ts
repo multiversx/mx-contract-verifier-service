@@ -2,17 +2,18 @@ import * as dotenv from 'dotenv';
 import { resolve } from 'path';
 
 // Determine which .env file to load based on NODE_ENV
-const envPath = process.env.NODE_ENV === 'infra' ? '.env' : `.env.${process.env.NODE_ENV ?? 'mainnet'}`;
+const envPath =
+  process.env.NODE_ENV === 'infra' ? '.env' : `.env.${process.env.NODE_ENV ?? 'mainnet'}`;
 dotenv.config({
   path: resolve(process.cwd(), envPath),
 });
 
-import 'module-alias/register';
-import { NestFactory } from '@nestjs/core';
 import { CommonConfigService, PubSubListenerModule } from '@libs/common';
-import { AppModule } from './app.module';
+import { NestFactory } from '@nestjs/core';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
+import 'module-alias/register';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
+import { AppModule } from './app.module';
 import { AppConfigService } from './config/app-config.service';
 
 async function bootstrap() {
