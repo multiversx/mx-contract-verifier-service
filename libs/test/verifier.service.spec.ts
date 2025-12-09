@@ -685,7 +685,6 @@ describe('VerifierService', () => {
     contractVerifierRepository.findOne.mockResolvedValueOnce(contract);
     contractVerifierRepository.findOne.mockResolvedValueOnce(verifiedContractMock);
 
-
     apiService.get.mockResolvedValueOnce({
       data: {
         codeHash: Buffer.from(
