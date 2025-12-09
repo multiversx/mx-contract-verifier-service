@@ -307,7 +307,7 @@ export class VerifierService {
       ownerAddress = await this.getOwnerOfOwnerContract(ownerAddress);
     }
 
-    if (!this.checkPayloadSignature(body.signature, body.payload, ownerAddress)) {
+    if (! await this.checkPayloadSignature(body.signature, body.payload, ownerAddress)) {
       throw new UnauthorizedException('Invalid signature');
     }
 
@@ -367,18 +367,18 @@ export class VerifierService {
     return verifier;
   }
 
-  private checkPayloadSignature(
+  private async checkPayloadSignature(
     signature: string,
     payload: VerifierPayload | VerifierDeletionPayload,
     ownerAddress: string,
-  ): boolean {
+  ): Promise<boolean> {
     const stringify = JSON.stringify(payload);
     const sha256 = crypto.createHash('sha256').update(stringify).digest('hex');
     const verifier = UserVerifier.fromAddress(new Address(ownerAddress));
     const message = Buffer.from(payload.contract + sha256);
 
     const signatureAsBuffer = Buffer.from(signature, 'hex');
-    const firstVerificationResult = verifier.verify(message, signatureAsBuffer);
+    const firstVerificationResult = await verifier.verify(message, signatureAsBuffer);
 
     const signableMessage = new Message({
       data: new Uint8Array(message),
@@ -387,7 +387,7 @@ export class VerifierService {
     const messageComputer = new MessageComputer();
     const verifyBytes = messageComputer.computeBytesForVerifying(signableMessage);
 
-    const secondVerificationResult = verifier.verify(verifyBytes, signatureAsBuffer);
+    const secondVerificationResult = await verifier.verify(verifyBytes, signatureAsBuffer);
 
     return firstVerificationResult || secondVerificationResult;
   }
