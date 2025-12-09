@@ -16,6 +16,7 @@ libs:
     network: ${NETWORK}
     urls:
       api: ${API_URL}
+      gateway: ${GATEWAY_URL}
     database:
       host: 'localhost'
       port: 27017
