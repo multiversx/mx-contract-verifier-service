@@ -121,6 +121,7 @@ describe('VerifierService', () => {
 
     cacheService = {
       getOrSet: jest.fn(),
+      delete: jest.fn(),
     } as any;
 
     const module: TestingModule = await Test.createTestingModule({
