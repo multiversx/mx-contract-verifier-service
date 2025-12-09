@@ -307,12 +307,14 @@ export class VerifierService {
       ownerAddress = await this.getOwnerOfOwnerContract(ownerAddress);
     }
 
-    if (! await this.checkPayloadSignature(body.signature, body.payload, ownerAddress)) {
+    if (!(await this.checkPayloadSignature(body.signature, body.payload, ownerAddress))) {
       throw new UnauthorizedException('Invalid signature');
     }
 
     const contractAddress = body.payload.contract;
     let result: ContractVerifierModel | undefined;
+
+    await this.cacheService.delete(CacheInfo.VerifiedContractModel(contractAddress).key);
 
     try {
       result = await this.deleteContractVerifier(contractAddress);
@@ -358,7 +360,7 @@ export class VerifierService {
   private async deleteContractVerifier(
     address: string,
   ): Promise<ContractVerifierModel | undefined> {
-    const verifier = await this.getContractVerifierModel(address);
+    const verifier = await this.getContractVerifierModelFromDb(address);
     if (!verifier) {
       return undefined;
     }
@@ -387,7 +389,10 @@ export class VerifierService {
     const messageComputer = new MessageComputer();
     const verifyBytes = messageComputer.computeBytesForVerifying(signableMessage);
 
-    const secondVerificationResult = await verifier.verify(verifyBytes, signatureAsBuffer);
+    const secondVerificationResult = await verifier.verify(
+      verifyBytes,
+      signatureAsBuffer,
+    );
 
     return firstVerificationResult || secondVerificationResult;
   }
